@@ -37,4 +37,36 @@ export const putBackupInBalanceStore = (data) => {
     Object.assign(BALANCE_STORE, data)
 }
 
+
+
+export const updateBalanceStoreUserTotalBalance = (userId:string, value:number) => {
+    //@ts-ignore
+    BALANCE_STORE[userId].balance["inr"].total = value
+}
+
+export const updateBalanceStoreUserLockedBalance = () => {
+    
+}
+
+// ----- STOCK READ ----
+export const readBalanceStoreUserTotalStocks = (userId:string, stockSymbol:string) => {
+    return BALANCE_STORE[userId]?.stock[stockSymbol]?.total
+}
+export const readBalanceStoreUserLockedStocks = (userId:string, stockSymbol:string) => {
+    return BALANCE_STORE[userId]?.stock[stockSymbol]?.locked
+}
+// ----- STOCK READ ----
+
+// ----- STOCK UPDATE ----
+export const updateBalanceStoreUserTotalStocks = (userId:string, stockSymbol:string, value:number) => {
+    //@ts-ignore
+    BALANCE_STORE[userId].stock[stockSymbol].total = value
+}
+
+export const updateBalanceStoreUserLockedStocks = (userId:string, stockSymbol:string, value:number) => {
+    //@ts-ignore
+    BALANCE_STORE[userId].stock[stockSymbol].locked = value;
+}
+// ----- STOCK UPDATE ----
+
 export default BALANCE_STORE;

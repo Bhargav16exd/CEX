@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { Order } from "../constants/stock.controller.js";
+import { Order } from "../controllers/stock.controller.js";
+
 
 const router = Router();
 

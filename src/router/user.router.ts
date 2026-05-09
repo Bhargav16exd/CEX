@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { addBalance, signup } from "../constants/user.controller.js";
+import { addBalance, signup } from "../controllers/user.controller.js";
+
 
 const router = Router();
 

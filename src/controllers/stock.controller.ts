@@ -4,6 +4,7 @@ import BALANCE_STORE from "../memory-store/balance/balance-store.js";
 import { ORDERBOOK_STORE } from "../memory-store/orderbook/orderbook-store.js";
 import { randomUUID } from "crypto";
 import { hanldeOrderSideAsk } from "../modules/order/ask.module.js";
+import { hanldeOrderSideBid } from "../modules/order/bid.module.js";
 
 // ------ Order Region Start -----
 /*
@@ -35,7 +36,7 @@ export const Order = (req:Request, res:Response) => {
 		}
 
 		if(side == OrderSide.BID){
-			hanldeOrderSideBid()
+			hanldeOrderSideBid(req, res , userId, stockSymbol, side, type, price, quantity);
 		}
 
 	} catch (error) {
@@ -45,7 +46,3 @@ export const Order = (req:Request, res:Response) => {
 // ------ Order Region End -----
 
 
-
-function hanldeOrderSideBid(){
-
-}

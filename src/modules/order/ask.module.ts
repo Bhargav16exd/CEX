@@ -2,7 +2,6 @@ import type { Request, Response } from "express"
 import { ORDERBOOK_STORE } from "../../memory-store/orderbook/orderbook-store.js"
 import BALANCE_STORE, { readBalanceStoreUserLockedStocks, readBalanceStoreUserTotalStocks, updateBalanceStoreUserLockedStocks, updateBalanceStoreUserTotalBalance, updateBalanceStoreUserTotalStocks } from "../../memory-store/balance/balance-store.js"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js"
-import { randomUUID } from "node:crypto"
 import { OrderType } from "../../controllers/stock.controller.js"
 
 export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, price:number, quantity:number){
@@ -39,7 +38,7 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 	if(type == OrderType.LIMIT){
 		/*
 			SCENARIO 1 - USER WANTS TO BUY BUT NO BID IS AVAILABLE
-		  ACTION - WE PUT ASK IN ORDERBOOK
+			ACTION - WE PUT ASK IN ORDERBOOK
 		*/
 
 		//if bid for that price doesnt exist , sit in ask side of orderbook
@@ -49,8 +48,8 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 		}
 
 		/*
-			SCENARIO 2 - USER WANTS TO BUY && BID IS AVAILABLE , depending on quantity available for sale we perform actions
-		  ACTION - WE PUT BID IN ORDERBOOK OR DELETE WHOLE BID IF REQUIRED
+			SCENARIO 2 - USER WANTS TO SELL/ASK && BID IS AVAILABLE , depending on quantity available for sale we perform actions
+		  ACTION - WE PUT ASK IN ORDERBOOK OR DELETE WHOLE BID IF REQUIRED
 		*/
 
 		
@@ -87,7 +86,7 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 				createdAt: new Date().toISOString()
 			})
 
-			//after all stocks are sold , reduce balance and total stock balance
+			//after all stocks are sold , reduce total stock
 			BALANCE_STORE[userId].stock[stockSymbol].total = (previousTotalStocks - quantity);
 			BALANCE_STORE[userId].stock[stockSymbol].locked = ( BALANCE_STORE[userId].stock[stockSymbol].locked - quantity);
 
@@ -96,7 +95,7 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 			//@ts-ignore
 			BALANCE_STORE[userId].balance["inr"].total = ( oldInrBalance + (price * quantity))
 
-			return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]))
+			return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
 		}
 
 		//partial fullfillment of ask order --> implies requested amount > available bids
@@ -122,7 +121,7 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 		updateBalanceStoreUserTotalStocks(userId, stockSymbol, (previousTotalStocks - quantity));
 		updateBalanceStoreUserTotalBalance(userId, (oldInrBalance + (price * bidInfo.remainingQuantity)));
 		
-		return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]))
+		return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
 	}
 }
 

@@ -38,9 +38,16 @@ export const putBackupInBalanceStore = (data) => {
 }
 
 
+export const readBalanceStoreUserTotalBalance = (userId:string) => {
+    //@ts-ignore
+    return BALANCE_STORE[userId].balance["inr"].total
+}
+export const readBalanceStoreUserLockedBalance = (userId:string) => {
+    //@ts-ignore
+    return BALANCE_STORE[userId].balance["inr"].locked
+}
 
 export const updateBalanceStoreUserTotalBalance = (userId:string, value:number) => {
-    console.log("balstore",BALANCE_STORE[userId])
     //@ts-ignore
     BALANCE_STORE[userId].balance["inr"].total = value
 }

@@ -111,15 +111,17 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 		actionCreateAsk(userId, stockSymbol, remainingStocksToSell, price)
 
 		//update user balances for sold stocks
-		updateBalanceStoreUserTotalStocks(userId, stockSymbol, (previousTotalStocks - quantity));
-		updateBalanceStoreUserLockedStocks(userId, stockSymbol,(readBalanceStoreUserLockedStocks(userId, stockSymbol)! - quantity));
-
-
-		//update INR balance
 		const oldInrBalance:any = BALANCE_STORE[userId]?.balance["inr"]?.total 
 
-		updateBalanceStoreUserTotalBalance(userAvailableStock.toString(), ( oldInrBalance + (price * bidInfo.remainingQuantity)));
-
+		/*
+		 AS PARTIAL STOCKS ARE asked
+		 -> LOCKED STOCKS ARE HANDLED BY FUNCTION ITSELF
+		 AND PARTIAL STOCKS ARE SOLD
+		 -> WE NEED TO UPDATE JUST THE BALANCE AS SALE VALUE
+		*/
+		updateBalanceStoreUserTotalStocks(userId, stockSymbol, (previousTotalStocks - quantity));
+		updateBalanceStoreUserTotalBalance(userId, (oldInrBalance + (price * bidInfo.remainingQuantity)));
+		
 		return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]))
 	}
 }

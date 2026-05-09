@@ -40,6 +40,7 @@ export const putBackupInBalanceStore = (data) => {
 
 
 export const updateBalanceStoreUserTotalBalance = (userId:string, value:number) => {
+    console.log("balstore",BALANCE_STORE[userId])
     //@ts-ignore
     BALANCE_STORE[userId].balance["inr"].total = value
 }

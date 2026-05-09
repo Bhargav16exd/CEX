@@ -2,6 +2,7 @@ import fs from "fs/promises"
 import BALANCE_STORE, { putBackupInBalanceStore } from "../balance/balance-store.js";
 import { fileURLToPath } from "url";
 import path from "path";
+import { ORDERBOOK_STORE } from "../orderbook/orderbook-store.js";
 
 enum storeType {
     BALANCE = "BALANCE",
@@ -39,7 +40,6 @@ const backupStoreEntityHelper = async (entity:any, storeTypeName:storeType) => {
     }
 
     const stringifyEntity = JSON.stringify(entity);
-    console.log(entity)
     await fs.writeFile(filePath,stringifyEntity,'utf-8')
 
     console.log(`DATA BACKED UP FOR ${storeTypeName}`);
@@ -53,7 +53,7 @@ export const initBalancesBackup = () => {
 
 export const initOrderBookBackup = () => {
     setInterval(() => {
-        backupStoreEntityHelper({},storeType.ORDER_BOOK)
+        backupStoreEntityHelper(ORDERBOOK_STORE,storeType.ORDER_BOOK)
     },5000)
 }
 

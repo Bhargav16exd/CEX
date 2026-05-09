@@ -8,12 +8,17 @@ export interface BalanceStoreUserEntity {
 		[currencyType:string]:currencyType;
 	},
 	stock:{
-		[stockHold: string]:number;
+		[stockType: string]:stockType;
 	}
 }
 
-export interface currencyType {
+interface currencyType {
   total:number;
   locked:number;
+}
+
+interface stockType {
+	total:number;
+	locked:number;
 }
 

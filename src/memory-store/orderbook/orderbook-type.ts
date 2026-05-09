@@ -9,21 +9,21 @@ export interface StockSpecificOrderbookStoreType {
 }
 
 interface AskType {
-    [price :number]:TransactionEntityType
+    [price :string]:TransactionEntityType
 }
 
 interface BidType {
-    [price :number]:TransactionEntityType
+    [price :string]:TransactionEntityType
 }
 
 interface TransactionEntityType {
     totalQuantity:number;
     remainingQuantity:number;
-    orders:[{
+    orders:{
         userId:string
         quantity:number
         filledQuantity:number
         orderId:string
-        createdAt:Date
-    }]
+        createdAt:string
+    }[]
 }

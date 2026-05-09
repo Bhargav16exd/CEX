@@ -18,7 +18,12 @@ export const initUserInBalanceStore = (user:User) => {
             },
             
         },
-        stock:{}
+        stock:{
+            "sol":{
+                total:20,
+                locked:0
+            }
+        }
     }
 }
 

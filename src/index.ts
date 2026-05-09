@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser"
 
 //route imports
 import userRouter from "./router/user.router.js"
+import stockRouter from "./router/stock.router.js"
 import { initBalancesBackup, initOrderBookBackup, loadBalanceBackup, loadOrderBookBackup } from "./memory-store/backup/backup-store.js";
 
 dotenv.config()
@@ -20,7 +21,7 @@ app.use(cookieParser())
 
 //Routes
 app.use("/api/user", userRouter);
-app.use("/api/stock",)
+app.use("/api/stock", stockRouter);
 
 //Supporting Services
 loadBalanceBackup().then(()=>{

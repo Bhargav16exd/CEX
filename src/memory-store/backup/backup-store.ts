@@ -2,11 +2,12 @@ import fs from "fs/promises"
 import BALANCE_STORE, { putBackupInBalanceStore } from "../balance/balance-store.js";
 import { fileURLToPath } from "url";
 import path from "path";
-import { ORDERBOOK_STORE } from "../orderbook/orderbook-store.js";
+import { ORDERBOOK_STORE, ORDERBOOK_STORE_INDEX } from "../orderbook/orderbook-store.js";
 
 enum storeType {
     BALANCE = "BALANCE",
-    ORDER_BOOK = "ORDER_BOOK"
+    ORDER_BOOK = "ORDER_BOOK",
+    ORDER_BOOK__INDEX = "ORDER_BOOK_INDEX"
 }
 
 // ------ BACKUP REGION START ------
@@ -24,6 +25,12 @@ const orderBookStoreBackupFilePath = path.join(
     "../../memory-store-backup/orderbook.backup.txt"
 );
 
+const orderBookIndexStoreBackupFilePath = path.join(
+    __dirname,
+    "../../memory-store-backup/orderbook-index.backup.txt"
+);
+
+
 const backupStoreEntityHelper = async (entity:any, storeTypeName:storeType) => {
     let filePath = null;
 
@@ -35,6 +42,10 @@ const backupStoreEntityHelper = async (entity:any, storeTypeName:storeType) => {
         filePath = orderBookStoreBackupFilePath
     }
 
+    if(storeTypeName == storeType.ORDER_BOOK__INDEX){
+        filePath = orderBookIndexStoreBackupFilePath
+    }
+
     if(!filePath){
         return
     }
@@ -42,7 +53,6 @@ const backupStoreEntityHelper = async (entity:any, storeTypeName:storeType) => {
     const stringifyEntity = JSON.stringify(entity);
     await fs.writeFile(filePath,stringifyEntity,'utf-8')
 
-    console.log(`DATA BACKED UP FOR ${storeTypeName}`);
 }
 
 export const initBalancesBackup = () => {
@@ -53,7 +63,8 @@ export const initBalancesBackup = () => {
 
 export const initOrderBookBackup = () => {
     setInterval(() => {
-        backupStoreEntityHelper(ORDERBOOK_STORE,storeType.ORDER_BOOK)
+        backupStoreEntityHelper(ORDERBOOK_STORE,storeType.ORDER_BOOK);
+        backupStoreEntityHelper(ORDERBOOK_STORE_INDEX, storeType.ORDER_BOOK__INDEX);
     },5000)
 }
 

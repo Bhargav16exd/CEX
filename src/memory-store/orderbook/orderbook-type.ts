@@ -3,7 +3,16 @@ export interface OrderbookStoreType {
     [stockName: string]: StockSpecificOrderbookStoreType
 }
 
-export interface StockSpecificOrderbookStoreType {
+export interface OrderbookIndexStoreType {
+    [stockName: string]: StockSpecificOrderbookIndexStoreType
+}
+
+interface StockSpecificOrderbookIndexStoreType {
+    ask:number[],
+    bid:number[]
+}
+
+interface StockSpecificOrderbookStoreType {
     ask:AskType,
     bid:BidType
 }

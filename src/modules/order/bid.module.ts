@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { ORDERBOOK_STORE } from "../../memory-store/orderbook/orderbook-store.js";
+import { addPriceToOrderBookIndex, ORDERBOOK_STORE, ORDERBOOK_STORE_INDEX } from "../../memory-store/orderbook/orderbook-store.js";
 import BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, readBalanceStoreUserTotalStocks, updateBalanceStoreUserTotalBalance, updateBalanceStoreUserTotalStocks } from "../../memory-store/balance/balance-store.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { OrderType } from "../../controllers/stock.controller.js";
@@ -29,9 +29,7 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 		throw new HttpErrorResponse(200,false, "Insufficient Balance");
 	}
 
-	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].balance["inr"]){
-		return
-	}
+	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].balance["inr"]) return
 
 	if(type == OrderType.LIMIT){
 
@@ -41,7 +39,7 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 		*/
 
 		if(!ORDERBOOK_STORE[stockSymbol].ask[price]){
-			actionCreateBid(userId, stockSymbol, quantity, price)
+			actionCreateBid(userId, stockSymbol, quantity, price);
 			return res.json(new HttpSuccessResponse(200, true, "Order Placed",ORDERBOOK_STORE[stockSymbol]));
 		}
 
@@ -50,63 +48,7 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 		  ACTION - WE PUT BID IN ORDERBOOK OR DELETE WHOLE BID IF REQUIRED
 		*/
 
-		const askInfo = ORDERBOOK_STORE[stockSymbol].ask[price]
-
-		if(askInfo.remainingQuantity == quantity){
-			//tbd
-			//delete both entries
-			//add entry in db for fills
-		}
-
-		if(askInfo.remainingQuantity > quantity){
-
-			//lock balance for transaction
-			const previousLockedBalance = readBalanceStoreUserLockedBalance(userId)!
-			BALANCE_STORE[userId].balance["inr"].locked = previousLockedBalance + (price * quantity)
-
-			//update order book
-			const previousRemainingQuantity = ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity;
-			ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity = previousRemainingQuantity - quantity;
-
-			//add order in orderbook
-			ORDERBOOK_STORE[stockSymbol].ask[price].orders.push({
-				userId,
-				quantity:askInfo.totalQuantity,
-				filledQuantity:quantity,
-				orderId:"1",
-				createdAt: new Date().toISOString()
-			})
-
-			//after all stocks are bought , reduce total balance and reset lock balance
-			BALANCE_STORE[userId].balance["inr"].total = readBalanceStoreUserTotalBalance(userId) - (price * quantity);
-			BALANCE_STORE[userId].balance["inr"].locked = readBalanceStoreUserLockedBalance(userId) -(price * quantity);
-
-			//update STOCK count
-			const oldStockCount = BALANCE_STORE[userId].stock[stockSymbol]?.total
-      //@ts-ignore
-			BALANCE_STORE[userId].stock[stockSymbol].total = oldStockCount + quantity
-
-			return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]))
-		}
-
-		//partial fullfillment of bid order --> implies requested stock amount > available ask
-		const previousTotalBalance = readBalanceStoreUserTotalBalance(userId)
-		const remainingStockToBuy = (quantity - askInfo.remainingQuantity);
-
-		//delete ask entry from order book
-			//tbd add fills db
-		delete ORDERBOOK_STORE[stockSymbol].ask[price]
-
-		//add bid entry to the order book
-		actionCreateBid(userId, stockSymbol, remainingStockToBuy, price);
-
-		//update user stocks
-		const oldStocks = readBalanceStoreUserTotalStocks(userId, stockSymbol)!;
-
-		updateBalanceStoreUserTotalStocks(userId, stockSymbol, (oldStocks + askInfo.remainingQuantity));
-		updateBalanceStoreUserTotalBalance(userId, (previousTotalBalance - (price * askInfo.remainingQuantity)));
-
-		return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
+		handlePriceAvailableForOrderTypeLimit(req, res, userId,  stockSymbol, side, type, price, quantity);
 	}
 
 }
@@ -137,5 +79,96 @@ const actionCreateBid = (userId:string , stockSymbol:string, quantity:number, pr
 		}]
 	}
 
+	//update orderbook index
+	addPriceToOrderBookIndex(stockSymbol, "bid", price);
+
 	return true
+}
+
+const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, userPrice:number, quantity:number) => {
+
+	if(!ORDERBOOK_STORE_INDEX[stockSymbol]) return false;
+	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].balance["inr"]) return;
+	let fullFilledQuantity = 0;
+	let count = 0
+
+	for(const price of ORDERBOOK_STORE_INDEX[stockSymbol].ask){
+
+		if(price > userPrice || quantity == fullFilledQuantity){
+			break;
+		}
+
+		//@ts-ignore
+		const askInfo = ORDERBOOK_STORE[stockSymbol].ask[price]!
+
+		if(!ORDERBOOK_STORE[stockSymbol] || !ORDERBOOK_STORE[stockSymbol].ask[price]) return false;
+
+		if(askInfo.remainingQuantity == (quantity - fullFilledQuantity)){
+			//tbd
+			//delete both entries
+			//add entry in db for fills
+		}
+
+		if(askInfo.remainingQuantity > (quantity - fullFilledQuantity)){
+
+			//lock balance for transaction
+			const previousLockedBalance = readBalanceStoreUserLockedBalance(userId)!
+			BALANCE_STORE[userId].balance["inr"].locked = previousLockedBalance + (price * quantity)
+
+			//update order book
+			const previousRemainingQuantity = ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity;
+			ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity = previousRemainingQuantity - (quantity - fullFilledQuantity);
+
+			//add order in orderbook
+			ORDERBOOK_STORE[stockSymbol].ask[price].orders.push({
+				userId,
+				quantity:askInfo.totalQuantity,
+				filledQuantity:quantity,
+				orderId:"1",
+				createdAt: new Date().toISOString()
+			})
+
+			//after all stocks are bought , reduce total balance and reset lock balance
+			BALANCE_STORE[userId].balance["inr"].total = readBalanceStoreUserTotalBalance(userId) - (price * quantity);
+			BALANCE_STORE[userId].balance["inr"].locked = readBalanceStoreUserLockedBalance(userId) - (price * quantity);
+
+			//update STOCK count
+			const oldStockCount = BALANCE_STORE[userId].stock[stockSymbol]?.total
+      //@ts-ignore
+			BALANCE_STORE[userId].stock[stockSymbol].total = oldStockCount + quantity
+
+			return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]))
+		}
+
+		//update fullfilled quantity
+		fullFilledQuantity = fullFilledQuantity + askInfo.remainingQuantity;
+
+		//delete ask entry from order book
+			//tbd add fills db
+		delete ORDERBOOK_STORE[stockSymbol].ask[price];
+
+
+		//add bid entry to the order book
+		//partial fullfillment of bid order --> implies requested stock amount > available ask
+		if(price == userPrice){
+			const remainingStockToBuy = (quantity - fullFilledQuantity);
+			actionCreateBid(userId, stockSymbol, remainingStockToBuy, price);
+		}
+		
+		//update user stocks
+		const oldStocks = readBalanceStoreUserTotalStocks(userId, stockSymbol)!;
+		const previousTotalBalance = readBalanceStoreUserTotalBalance(userId);
+
+		updateBalanceStoreUserTotalStocks(userId, stockSymbol, (oldStocks + askInfo.remainingQuantity));
+		updateBalanceStoreUserTotalBalance(userId, (previousTotalBalance - (price * askInfo.remainingQuantity)));
+
+		count++;
+	}
+
+	while(count > 0){
+		ORDERBOOK_STORE_INDEX[stockSymbol].ask.shift();
+		count--;
+	}
+
+	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
 }

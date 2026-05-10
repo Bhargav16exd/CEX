@@ -1,4 +1,4 @@
-import type { OrderbookStoreType } from "./orderbook-type.js";
+import type { OrderbookIndexStoreType, OrderbookStoreType } from "./orderbook-type.js";
 
 // export const ORDERBOOK_STORE:OrderbookStoreType = {};
 
@@ -6,8 +6,29 @@ export const ORDERBOOK_STORE: OrderbookStoreType = {
 	sol: {
 		ask: {
 			"145": {
-					totalQuantity: 120,
-					remainingQuantity: 80,
+					totalQuantity: 10,
+					remainingQuantity: 10,
+					orders: [
+							{
+									userId: "user_1",
+									quantity: 50,
+									filledQuantity: 20,
+									orderId: "ask_order_1",
+									createdAt: "2026-05-09T10:00:00Z"
+							},
+							{
+									userId: "user_2",
+									quantity: 70,
+									filledQuantity: 20,
+									orderId: "ask_order_2",
+									createdAt: "2026-05-09T10:05:00Z"
+							}
+					]
+			},
+
+			"148": {
+					totalQuantity: 2,
+					remainingQuantity: 2,
 					orders: [
 							{
 									userId: "user_1",
@@ -27,8 +48,28 @@ export const ORDERBOOK_STORE: OrderbookStoreType = {
 			},
 
 			"150": {
-					totalQuantity: 200,
-					remainingQuantity: 200,
+					totalQuantity: 2,
+					remainingQuantity: 2,
+					orders: [
+							{
+									userId: "user_3",
+									quantity: 100,
+									filledQuantity: 0,
+									orderId: "ask_order_3",
+									createdAt: "2026-05-09T10:10:00Z"
+							},
+							{
+									userId: "user_4",
+									quantity: 100,
+									filledQuantity: 0,
+									orderId: "ask_order_4",
+									createdAt: "2026-05-09T10:12:00Z"
+							}
+					]
+			},
+			"160": {
+					totalQuantity: 100,
+					remainingQuantity: 100,
 					orders: [
 							{
 									userId: "user_3",
@@ -85,3 +126,23 @@ export const ORDERBOOK_STORE: OrderbookStoreType = {
 		}
 }
 };
+
+export const ORDERBOOK_STORE_INDEX: OrderbookIndexStoreType= {
+	sol:{
+		ask:[145,148,150,160],
+		bid:[138,140]
+	}
+};
+
+type Side = "ask" | "bid";
+
+export const addPriceToOrderBookIndex = (stockSymbol:string,side:Side,price:number) => {
+
+	if(!ORDERBOOK_STORE_INDEX[stockSymbol]){
+		return
+	}
+	//push
+	ORDERBOOK_STORE_INDEX[stockSymbol][side].push(price);
+	//sort
+	ORDERBOOK_STORE_INDEX[stockSymbol][side].sort((a,b)=> a - b);
+}

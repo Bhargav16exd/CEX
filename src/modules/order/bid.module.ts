@@ -37,7 +37,6 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 			SCENARIO 1 - USER WANTS TO BUY BUT NO CORRESPONDING ASK WITH SAME PRICE IS AVAILABLE
 			ACTION - WE PUT BID IN ORDERBOOK
 		*/
-
 		if(!ORDERBOOK_STORE[stockSymbol].ask[price]){
 			actionCreateBid(userId, stockSymbol, quantity, price);
 			return res.json(new HttpSuccessResponse(200, true, "Order Placed",ORDERBOOK_STORE[stockSymbol]));
@@ -50,7 +49,6 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 
 		handlePriceAvailableForOrderTypeLimit(req, res, userId,  stockSymbol, side, type, price, quantity);
 	}
-
 }
 
 const actionCreateBid = (userId:string , stockSymbol:string, quantity:number, price:number) => {
@@ -105,8 +103,20 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
 
 		if(askInfo.remainingQuantity == (quantity - fullFilledQuantity)){
 			//tbd
-			//delete both entries
 			//add entry in db for fills
+
+			//delete both entries
+			delete ORDERBOOK_STORE[stockSymbol].ask[price];
+
+			//update user stocks
+			const oldStocks = readBalanceStoreUserTotalStocks(userId, stockSymbol)!;
+			const previousTotalBalance = readBalanceStoreUserTotalBalance(userId);
+
+			updateBalanceStoreUserTotalStocks(userId, stockSymbol, (oldStocks + askInfo.remainingQuantity));
+			updateBalanceStoreUserTotalBalance(userId, (previousTotalBalance - (price * askInfo.remainingQuantity)));
+
+			count++;
+			break;
 		}
 
 		if(askInfo.remainingQuantity > (quantity - fullFilledQuantity)){
@@ -137,7 +147,7 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
       //@ts-ignore
 			BALANCE_STORE[userId].stock[stockSymbol].total = oldStockCount + quantity
 
-			return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]))
+			break;
 		}
 
 		//update fullfilled quantity
@@ -169,6 +179,8 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
 		ORDERBOOK_STORE_INDEX[stockSymbol].ask.shift();
 		count--;
 	}
+
+	console.log(ORDERBOOK_STORE_INDEX[stockSymbol]);
 
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
 }

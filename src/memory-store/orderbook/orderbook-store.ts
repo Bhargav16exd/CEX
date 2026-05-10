@@ -91,8 +91,8 @@ export const ORDERBOOK_STORE: OrderbookStoreType = {
 
 		bid: {
 			"140": {
-					totalQuantity: 180,
-					remainingQuantity: 100,
+					totalQuantity: 2,
+					remainingQuantity: 2,
 					orders: [
 							{
 									userId: "user_5",
@@ -111,8 +111,21 @@ export const ORDERBOOK_STORE: OrderbookStoreType = {
 					]
 			},
 			"138": {
-					totalQuantity: 90,
-					remainingQuantity: 90,
+					totalQuantity: 10,
+					remainingQuantity: 10,
+					orders: [
+							{
+									userId: "user_7",
+									quantity: 90,
+									filledQuantity: 0,
+									orderId: "bid_order_3",
+									createdAt: "2026-05-09T10:20:00Z"
+							}
+					]
+			},
+			"145": {
+					totalQuantity: 2,
+					remainingQuantity: 2,
 					orders: [
 							{
 									userId: "user_7",
@@ -130,7 +143,7 @@ export const ORDERBOOK_STORE: OrderbookStoreType = {
 export const ORDERBOOK_STORE_INDEX: OrderbookIndexStoreType= {
 	sol:{
 		ask:[145,148,150,160],
-		bid:[138,140]
+		bid:[138,140,145]
 	}
 };
 

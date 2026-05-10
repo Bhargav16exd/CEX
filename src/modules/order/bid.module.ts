@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { addPriceToOrderBookIndex, ORDERBOOK_STORE, ORDERBOOK_STORE_INDEX } from "../../memory-store/orderbook/orderbook-store.js";
 import BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, readBalanceStoreUserTotalStocks, updateBalanceStoreUserTotalBalance, updateBalanceStoreUserTotalStocks } from "../../memory-store/balance/balance-store.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
-import { OrderType } from "../../controllers/stock.controller.js";
+import { Order, OrderType } from "../../controllers/stock.controller.js";
 
 
 export function hanldeOrderSideBid(req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, price:number, quantity:number){
@@ -48,6 +48,11 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 		*/
 
 		handlePriceAvailableForOrderTypeLimit(req, res, userId,  stockSymbol, side, type, price, quantity);
+	}
+
+
+	if(type == OrderType.MARKET){
+		handleOrderTypeMarket(req, res, userId, stockSymbol, side, type, price, quantity);
 	}
 }
 
@@ -181,6 +186,100 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
 	}
 
 	console.log(ORDERBOOK_STORE_INDEX[stockSymbol]);
+
+	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
+}
+
+const handleOrderTypeMarket = (req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, userPrice:number, quantity:number) => {
+
+	if(!ORDERBOOK_STORE_INDEX[stockSymbol]) return;
+	if(!BALANCE_STORE[userId] ||!BALANCE_STORE[userId]?.balance["inr"] || !BALANCE_STORE[userId].stock[stockSymbol]) return;
+	if(!ORDERBOOK_STORE[stockSymbol] || !ORDERBOOK_STORE[stockSymbol].ask) return;
+
+	//lock user balance before bid begins
+
+	let fullFilledQuantity = 0;
+	let count = 0;
+
+	
+	for(const price of ORDERBOOK_STORE_INDEX[stockSymbol].ask){
+
+		if(fullFilledQuantity == quantity){
+			break;
+		}
+
+		const askInfo = ORDERBOOK_STORE[stockSymbol]?.ask[price]!
+
+		if(!ORDERBOOK_STORE[stockSymbol].ask[price]) return;
+	
+		if(askInfo.remainingQuantity == (quantity - fullFilledQuantity)){
+
+			//increment full quantity
+			fullFilledQuantity = fullFilledQuantity + askInfo.remainingQuantity;
+
+			//delete entity
+			delete ORDERBOOK_STORE[stockSymbol]?.ask[price];
+
+			//read user balance and stock
+			const userBalanceTotal = readBalanceStoreUserTotalBalance(userId);
+			const userStocksTotal = readBalanceStoreUserTotalStocks(userId, stockSymbol)!;
+
+			//udpate balance and stocks
+			BALANCE_STORE[userId].balance["inr"].total = userBalanceTotal - (askInfo.remainingQuantity * price);
+			BALANCE_STORE[userId].stock[stockSymbol].total = userStocksTotal + askInfo.remainingQuantity;
+			count++;
+			break;
+		}
+
+		if(askInfo.remainingQuantity > (quantity - fullFilledQuantity)){
+
+			//update store
+			ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity = ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity - (quantity - fullFilledQuantity);
+
+			//add order in order book
+			ORDERBOOK_STORE[stockSymbol].ask[price].orders.push({
+				userId,
+				quantity:askInfo.totalQuantity,
+				filledQuantity:(quantity - fullFilledQuantity),
+				orderId:"1",
+				createdAt: new Date().toISOString()
+			})
+
+			//read user balance and stocks
+			const userBalanceTotal = readBalanceStoreUserTotalBalance(userId);
+			const userStocksTotal = readBalanceStoreUserTotalStocks(userId, stockSymbol)!;
+
+			//update 
+			BALANCE_STORE[userId].balance["inr"].total = userBalanceTotal - ((quantity - fullFilledQuantity) * price);
+			BALANCE_STORE[userId].stock[stockSymbol].total = userStocksTotal + (quantity - fullFilledQuantity);
+
+			break;
+		}
+
+		//increment fullfill quantitiy
+		fullFilledQuantity = fullFilledQuantity + askInfo.remainingQuantity;
+
+		//delete entity
+		delete ORDERBOOK_STORE[stockSymbol]?.ask[price];
+
+		//read user balance and stock
+		const userBalanceTotal = readBalanceStoreUserTotalBalance(userId);
+		const userStocksTotal = readBalanceStoreUserTotalStocks(userId, stockSymbol)!;
+
+		//udpate balance and stocks
+		BALANCE_STORE[userId].balance["inr"].total = userBalanceTotal - (askInfo.remainingQuantity * price);
+		BALANCE_STORE[userId].stock[stockSymbol].total = userStocksTotal + askInfo.remainingQuantity;
+		count++;
+	}
+
+	while(count > 0){
+		ORDERBOOK_STORE_INDEX[stockSymbol].ask.shift();
+		count--;
+	}
+
+	if(count == ORDERBOOK_STORE_INDEX[stockSymbol].ask.length){
+		return res.json(new HttpSuccessResponse(200, true, `Pratial Order Completed [Remaining Amount] : ${quantity-fullFilledQuantity}`, ORDERBOOK_STORE[stockSymbol]));
+	}
 
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
 }

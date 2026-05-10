@@ -1,8 +1,8 @@
 import type { Request, Response } from "express"
 import { addPriceToOrderBookIndex, ORDERBOOK_STORE, ORDERBOOK_STORE_INDEX } from "../../memory-store/orderbook/orderbook-store.js"
-import BALANCE_STORE, { readBalanceStoreUserLockedStocks, readBalanceStoreUserTotalStocks, updateBalanceStoreUserLockedStocks, updateBalanceStoreUserTotalBalance, updateBalanceStoreUserTotalStocks } from "../../memory-store/balance/balance-store.js"
+import BALANCE_STORE, { readBalanceStoreUserLockedStocks, readBalanceStoreUserTotalBalance, readBalanceStoreUserTotalStocks, updateBalanceStoreUserLockedStocks, updateBalanceStoreUserTotalBalance, updateBalanceStoreUserTotalStocks } from "../../memory-store/balance/balance-store.js"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js"
-import { OrderType } from "../../controllers/stock.controller.js"
+import { Order, OrderType } from "../../controllers/stock.controller.js"
 
 export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, price:number, quantity:number){
 
@@ -53,6 +53,10 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 		*/
 
 		handlePriceAvailableForOrder(req, res, userId, stockSymbol, side, type, price, quantity);
+	}
+
+	if(type == OrderType.MARKET){
+		handleOrderTypeMarket(req, res, userId, stockSymbol, side, type , price, quantity);
 	}
 }
 
@@ -205,8 +209,107 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 		ORDERBOOK_STORE_INDEX[stockSymbol].bid.pop();
 		count--;
 	}
-
-	console.log(ORDERBOOK_STORE_INDEX[stockSymbol]);
 	
+	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
+}
+
+const handleOrderTypeMarket = (req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, userPrice:number, quantity:number) => {
+
+	if(!ORDERBOOK_STORE_INDEX[stockSymbol]) return;
+	if(!ORDERBOOK_STORE[stockSymbol]) return;
+	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].balance["inr"] || !BALANCE_STORE[userId].stock[stockSymbol]) return
+	
+	let fullFilledQuantity = 0;
+	let count = 0;
+
+	for(let i = ORDERBOOK_STORE_INDEX[stockSymbol].bid.length - 1 ; i >= 0  ; i--){
+
+		if(fullFilledQuantity == quantity){
+			break;
+		}
+
+		//get highest price bid from index 
+		const price = ORDERBOOK_STORE_INDEX[stockSymbol].bid[i]!;
+
+		if(!ORDERBOOK_STORE[stockSymbol].bid[price]) return;
+
+		//based on price recived -> fetch full order details
+		const bidInfo = ORDERBOOK_STORE[stockSymbol].bid[price]!
+
+		if(bidInfo.remainingQuantity == (quantity - fullFilledQuantity)){
+			
+			//add bid quantity 
+			fullFilledQuantity = fullFilledQuantity + bidInfo.remainingQuantity
+
+			//delete that bid from order book
+			delete ORDERBOOK_STORE[stockSymbol].bid[price]
+
+			//now as order is proccessed read user stock and balance && update user stock and balance
+			//read
+			const userBalanceTotal = readBalanceStoreUserTotalBalance(userId)
+			const userStocksTotal = readBalanceStoreUserTotalStocks(userId, stockSymbol)!
+
+			//update
+			BALANCE_STORE[userId].balance["inr"].total = userBalanceTotal + (price * bidInfo.remainingQuantity);
+			BALANCE_STORE[userId].stock[stockSymbol].total = userStocksTotal - bidInfo.remainingQuantity;
+			count++;
+			break;
+		}
+
+		if(bidInfo.remainingQuantity > (quantity - fullFilledQuantity)){
+			//update store
+			ORDERBOOK_STORE[stockSymbol].bid[price].remainingQuantity = bidInfo.remainingQuantity - (quantity - fullFilledQuantity);
+
+			//add order 
+			ORDERBOOK_STORE[stockSymbol].bid[price].orders.push({
+				userId,
+				quantity:bidInfo.totalQuantity,
+				filledQuantity:(quantity - fullFilledQuantity),
+				orderId:"1",
+				createdAt: new Date().toISOString()
+			})
+
+			//read and update balances and stock of user
+
+			//read
+			const userBalanceTotal = readBalanceStoreUserTotalBalance(userId);
+			const userStocksTotal = readBalanceStoreUserTotalStocks(userId, stockSymbol)!;
+
+			//update
+			BALANCE_STORE[userId].balance["inr"].total = userBalanceTotal + (price * (quantity - fullFilledQuantity));
+			BALANCE_STORE[userId].stock[stockSymbol].total = userStocksTotal - (quantity - fullFilledQuantity);
+
+			break;
+		}
+
+		/*
+			SECTION HANLDES THAT , IF A SINGLE BID IS NOT ABLE TO FULL FILL THEN BELOW HAPPENS
+		*/
+		//add bid quantity 
+		fullFilledQuantity = fullFilledQuantity + bidInfo.remainingQuantity
+
+		//delete that bid from order book
+		delete ORDERBOOK_STORE[stockSymbol].bid[price]
+
+		//now as order is proccessed read user stock and balance && update user stock and balance
+		//read
+		const userBalanceTotal = readBalanceStoreUserTotalBalance(userId)
+		const userStocksTotal = readBalanceStoreUserTotalStocks(userId, stockSymbol)!
+
+		//update
+		BALANCE_STORE[userId].balance["inr"].total = userBalanceTotal + (price * bidInfo.remainingQuantity);
+		BALANCE_STORE[userId].stock[stockSymbol].total = userStocksTotal - bidInfo.remainingQuantity;
+		count ++;
+	}
+
+	while(count > 0){
+		ORDERBOOK_STORE_INDEX[stockSymbol].bid.pop();
+		count --;
+	}
+
+	if(count == ORDERBOOK_STORE_INDEX[stockSymbol].bid.length){
+		return res.json(new HttpSuccessResponse(200, true, `Pratial Order Completed [Remaining Amount] : ${quantity-fullFilledQuantity}`, ORDERBOOK_STORE[stockSymbol]));
+	}
+
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
 }

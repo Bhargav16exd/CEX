@@ -2,7 +2,7 @@ import type { Request, Response } from "express"
 import { addPriceToOrderBookIndex, ORDERBOOK_STORE, ORDERBOOK_STORE_INDEX } from "../../memory-store/orderbook/orderbook-store.js"
 import BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserLockedStocks, readBalanceStoreUserTotalBalance, readBalanceStoreUserTotalStocks, updateBalancesAndStockForAskOrder, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserLockedStocks, updateBalanceStoreUserTotalBalance, updateBalanceStoreUserTotalStocks } from "../../memory-store/balance/balance-store.js"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js"
-import { Order, OrderType } from "../../controllers/stock.controller.js"
+import { OrderType } from "../../controllers/stock.controller.js"
 
 export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, price:number, quantity:number){
 
@@ -40,7 +40,6 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 		//before starting order - lock all the stocks that are required for order fullfillment
 		const takerPreviousLockedStocks = readBalanceStoreUserLockedStocks(userId, stockSymbol);
 		updateBalanceStoreUserLockedStocks(userId, stockSymbol, (takerPreviousLockedStocks + quantity));
-
 
 		/*
 			SCENARIO 1 - USER WANTS TO BUY BUT NO BID IS AVAILABLE

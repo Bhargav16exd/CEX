@@ -1,5 +1,5 @@
 import dotenv from "dotenv"
-import express, { urlencoded } from 'express';
+import express, { urlencoded, type NextFunction, type Request, type Response } from 'express';
 import cookieParser from "cookie-parser"
 import cors from "cors"
 
@@ -36,6 +36,24 @@ loadBalanceBackup().then(()=>{
 loadOrderBookBackup().then(()=>{
   initOrderBookBackup();
 })
+
+// Error Handler
+app.use((
+  err:any,
+  _:Request,
+  res:Response,
+  next:NextFunction
+) => {
+
+  const statusCode = err.statusCode || 500;
+
+  res.status(statusCode).json({
+    success: false,
+    statusCode,
+    message: err.message || "Internal Server Error",
+  });
+
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);

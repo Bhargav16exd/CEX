@@ -1,9 +1,7 @@
 import { Router } from "express";
 import { Order } from "../controllers/stock.controller.js";
 
-
 const router = Router();
-
 
 router.route("/order").post(Order)
 

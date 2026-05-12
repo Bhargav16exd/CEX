@@ -7,13 +7,23 @@ import { initUserInBalanceStore } from "../memory-store/balance/balance-store.js
 const SALT_ROUNDS = 10 
 
 //SIGNUP
-const signup = async (req:Request, res:Response) => {
+const signup = async (req:Request, res:Response, next:any) => {
 	try {
 
 		const {username, password} = req.body;
 
 		if(!username || !username.trim() || !password || !password.trim()){
 			throw new HttpErrorResponse(400, false, "Incomplete Inputs");
+		}
+
+		const existingUser = await prisma.user.findUnique({
+			where:{
+				username
+			}
+		})
+
+		if(existingUser){
+			throw new HttpErrorResponse(400, false, "Please choose another username");
 		}
 
 		const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -36,7 +46,7 @@ const signup = async (req:Request, res:Response) => {
 	res.json(new HttpSuccessResponse(201, true, "User Onboarded"));
 
 	} catch (error) {
-		console.log(error)
+		next(error);
 	}
 }
 

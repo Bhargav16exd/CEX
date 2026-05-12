@@ -13,7 +13,6 @@ class HttpSuccessResponse {
 }
 
 class HttpErrorResponse extends Error {
-
     statusCode :number;
     success: boolean;
     message: string;

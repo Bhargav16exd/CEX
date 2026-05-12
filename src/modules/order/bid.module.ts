@@ -13,11 +13,9 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 				bid:{}
 			}
 	}
-	console.log("hi")
 	const userAvailableBalance = readBalanceStoreUserTotalBalance(userId)! - readBalanceStoreUserLockedBalance(userId)!
 
 	if(!userAvailableBalance){
-		console.log(userAvailableBalance)
 		//tbd
 		//user owned stocks are not found in memory 
 		//refresh memory
@@ -31,6 +29,9 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].balance["inr"]) return
 
 	if(type == OrderType.LIMIT){
+
+		const takerPreviousLockedBalance = readBalanceStoreUserLockedBalance(userId);
+		updateBalanceStoreUserLockedBalance(userId, (takerPreviousLockedBalance + (quantity * price)));
 
 		/*
 			SCENARIO 1 - USER WANTS TO BUY BUT NO CORRESPONDING ASK WITH SAME PRICE IS AVAILABLE
@@ -46,12 +47,12 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 			if(ORDERBOOK_STORE[stockSymbol].bid[price]){
 				ORDERBOOK_STORE[stockSymbol].bid[price].totalQuantity = ORDERBOOK_STORE[stockSymbol].bid[price].totalQuantity + quantity;
 				ORDERBOOK_STORE[stockSymbol].bid[price].remainingQuantity = ORDERBOOK_STORE[stockSymbol].bid[price].remainingQuantity + quantity;
-				return res.json(new HttpSuccessResponse(200, true, "Order Placed",ORDERBOOK_STORE[stockSymbol]));
+				return res.json(new HttpSuccessResponse(200, true, "Order Placed",{orderbook:ORDERBOOK_STORE[stockSymbol], balance:BALANCE_STORE}));
 			}
 			//if there exist no bid then create one
 			else{
 				actionCreateBid(userId, stockSymbol, quantity, price);
-				return res.json(new HttpSuccessResponse(200, true, "Order Placed",ORDERBOOK_STORE[stockSymbol]));
+				return res.json(new HttpSuccessResponse(200, true, "Order Placed",{orderbook:ORDERBOOK_STORE[stockSymbol], balance:BALANCE_STORE}));
 			}
 		}
 
@@ -71,14 +72,13 @@ export function hanldeOrderSideBid(req:Request, res:Response , userId:string, st
 
 const actionCreateBid = (userId:string , stockSymbol:string, quantity:number, price:number) => {
 
-	console.log("creating bid order")
-
 	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].balance["inr"]){
-		console.log("insufficient balance")
+		//tbd
 		return false
 	}
 
 	if(!ORDERBOOK_STORE[stockSymbol]){
+		//tbd
 		return false
 	}
 
@@ -98,19 +98,13 @@ const actionCreateBid = (userId:string , stockSymbol:string, quantity:number, pr
 	//update orderbook index
 	addPriceToOrderBookIndex(stockSymbol, "bid", price);
 
-	console.log("orderbook after bid creation",ORDERBOOK_STORE[stockSymbol])
-
 	return true
 }
 
 const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, userPrice:number, quantity:number) => {
 
-	console.log("hi 1")
 	if(!ORDERBOOK_STORE_INDEX[stockSymbol]) return false;
 	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].balance["inr"]) return;
-
-	const takerPreviousLockedBalance = readBalanceStoreUserLockedBalance(userId);
-	updateBalanceStoreUserLockedBalance(userId, (takerPreviousLockedBalance + (quantity * userPrice)));
 
 	const orderTotalCost = quantity * userPrice;
 	let totalCostSpent = 0;
@@ -118,13 +112,8 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
 	let fullFilledQuantity = 0;
 	let count = 0
 
-	console.log("hi 2")
-
-	console.log("orderbook index",ORDERBOOK_STORE_INDEX[stockSymbol].ask)
 
 	for(const price of ORDERBOOK_STORE_INDEX[stockSymbol].ask){
-
-		console.log("current price in orderbook index",price)
 
 		/*
 			IF USER GIVEN PRICE IS NOT AVAILABLE IN ORDERBOOK BUT THERE EXIST FEW ASK PRICES THAT ARE LESS THAN 
@@ -132,14 +121,13 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
 		*/
 		if(price > userPrice && quantity > fullFilledQuantity){
 			const remainingStockToBuy = (quantity - fullFilledQuantity);
-			console.log("creating bid for remaining quantity",remainingStockToBuy)
 			actionCreateBid(userId, stockSymbol, remainingStockToBuy, userPrice);
-
 			break;
 		}
 
+
 		if(price > userPrice || quantity == fullFilledQuantity){
-			console.log("this rejected at price",price)
+			//tbd
 			break;
 		}
 		
@@ -147,9 +135,6 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
 		const askInfo = ORDERBOOK_STORE[stockSymbol].ask[price]!
 
 		if(!ORDERBOOK_STORE[stockSymbol] || !ORDERBOOK_STORE[stockSymbol].ask[price]) return false;
-		console.log("hi 3")
-
-		console.log("fullfilled quantity",fullFilledQuantity)
 
 		if(askInfo.remainingQuantity == (quantity - fullFilledQuantity)){
 			//tbd
@@ -200,34 +185,37 @@ const handlePriceAvailableForOrderTypeLimit = (req:Request, res:Response , userI
 
 		//add bid entry to the order book
 		//partial fullfillment of bid order --> implies requested stock amount > available ask
-		if(price == userPrice ){
+		if(price == userPrice){
 			const remainingStockToBuy = (quantity - fullFilledQuantity);
 			actionCreateBid(userId, stockSymbol, remainingStockToBuy, price);
 		}
 
 		if(price  == ORDERBOOK_STORE_INDEX[stockSymbol].ask[ORDERBOOK_STORE_INDEX[stockSymbol].ask.length - 1]){
+			totalCostSpent = totalCostSpent + ((quantity - fullFilledQuantity) * userPrice);
 			const remainingStockToBuy = (quantity - fullFilledQuantity);
 			actionCreateBid(userId, stockSymbol, remainingStockToBuy, userPrice);
 		}
 
 		//update user stocks
 		updateBalancesAndStockForBidOrder(stockSymbol, userId, askInfo.orders[0]?.userId!, askInfo.remainingQuantity, price);
+
 		count++;
 	}
 
-	updateBalanceStoreUserLockedBalance(userId, (readBalanceStoreUserLockedBalance(userId) - (orderTotalCost - totalCostSpent)));
-
-	console.log("count",count)
-	console.log("orderbook index after",ORDERBOOK_STORE_INDEX[stockSymbol].ask)
+	/*
+	 IF ASK EXIST WITH PRICE LESS THAN OR EQUAL TO USER GIVEN PRICE , we lock the limit amount which is greater , so in that scenario
+	 we will deduct extra locked balance
+	*/
+	if(userPrice > ORDERBOOK_STORE_INDEX[stockSymbol]?.ask[0]!){
+		updateBalanceStoreUserLockedBalance(userId, (readBalanceStoreUserLockedBalance(userId) - (orderTotalCost - totalCostSpent)));
+	}
 
 	while(count > 0){
 		ORDERBOOK_STORE_INDEX[stockSymbol].ask.shift();
 		count--;
 	}
 
-	console.log(ORDERBOOK_STORE_INDEX[stockSymbol].ask)
-
-	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
+	return res.json(new HttpSuccessResponse(200, true, "Order Placed",{orderbook:ORDERBOOK_STORE[stockSymbol], balance:BALANCE_STORE}));
 }
 
 const handleOrderTypeMarket = (req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, userPrice:number, quantity:number) => {

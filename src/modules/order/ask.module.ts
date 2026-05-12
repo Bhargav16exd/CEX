@@ -6,8 +6,6 @@ import { Order, OrderType } from "../../controllers/stock.controller.js"
 
 export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, price:number, quantity:number){
 
-	console.log("hi")
-
 	//if that stock doesnt exist in order book create an entry for that
 	if(!ORDERBOOK_STORE[stockSymbol]){
 		ORDERBOOK_STORE[stockSymbol] = {
@@ -32,17 +30,22 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 	}
 
 	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].stock[stockSymbol]){
-		console.log("BALANCE STORE")
+		//tbd
 		return
 	}
 
 
 	if(type == OrderType.LIMIT){
+
+		//before starting order - lock all the stocks that are required for order fullfillment
+		const takerPreviousLockedStocks = readBalanceStoreUserLockedStocks(userId, stockSymbol);
+		updateBalanceStoreUserLockedStocks(userId, stockSymbol, (takerPreviousLockedStocks + quantity));
+
+
 		/*
 			SCENARIO 1 - USER WANTS TO BUY BUT NO BID IS AVAILABLE
 			ACTION - WE PUT ASK IN ORDERBOOK
 		*/
-
 		const ORDERBOOK_STORE_INDEX_length = ORDERBOOK_STORE_INDEX[stockSymbol]?.bid.length!
 
 		//if bid for that price doesnt exist , sit in ask side of orderbook
@@ -52,23 +55,18 @@ export function hanldeOrderSideAsk(req:Request, res:Response , userId:string, st
 				|| ORDERBOOK_STORE_INDEX_length == 0)
 		){			
 		
-			console.log("hi 0.2")
 			//implies if there alredy exist an ASK then just increment its quantity 
 			if(ORDERBOOK_STORE[stockSymbol].ask[price]){
 
 				ORDERBOOK_STORE[stockSymbol].ask[price].totalQuantity = ORDERBOOK_STORE[stockSymbol].ask[price].totalQuantity + quantity;
 				ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity = ORDERBOOK_STORE[stockSymbol].ask[price].remainingQuantity + quantity;
 
-				const previousLockedStocks = BALANCE_STORE[userId].stock[stockSymbol].locked; 
-				updateBalanceStoreUserLockedStocks(userId, stockSymbol, (previousLockedStocks + quantity))
-
-				return res.json(new HttpSuccessResponse(200, true, "Order Placed",ORDERBOOK_STORE[stockSymbol]));
+				return res.json(new HttpSuccessResponse(200, true, "Order Placed",{orderbook:ORDERBOOK_STORE[stockSymbol],balance:BALANCE_STORE}));
 			}
 			//else create a new ask
 			else{
-				console.log("hi 0.1")
 				actionCreateAsk(userId, stockSymbol, quantity ,price);
-				return res.json(new HttpSuccessResponse(200, true, "Order Placed",ORDERBOOK_STORE[stockSymbol]));
+				return res.json(new HttpSuccessResponse(200, true, "Order Placed",{orderbook:ORDERBOOK_STORE[stockSymbol],balance:BALANCE_STORE}));
 			}
 		}
 		/*
@@ -97,9 +95,6 @@ const actionCreateAsk = (userId:string , stockSymbol:string, quantity:number, pr
 		return false
 	}
 
-	const previousLockedStocks = BALANCE_STORE[userId].stock[stockSymbol].locked; 
-	BALANCE_STORE[userId].stock[stockSymbol].locked = (previousLockedStocks + quantity);
-
 	//update orderbook
 	ORDERBOOK_STORE[stockSymbol].ask[price] = {
 		totalQuantity:quantity,
@@ -121,28 +116,18 @@ const actionCreateAsk = (userId:string , stockSymbol:string, quantity:number, pr
 
 const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, userPrice:number, quantity:number) => {
 
-	console.log("hi 1")
-
 	if(!ORDERBOOK_STORE[stockSymbol]) return;
 	if(!BALANCE_STORE[userId] || !BALANCE_STORE[userId].stock[stockSymbol]) return;
 	if(!ORDERBOOK_STORE_INDEX[stockSymbol]?.bid) return;
 	let fullFilledQuantity = 0;
 	let count = 0;
 
-	const takerPreviousLockedStocks = readBalanceStoreUserLockedStocks(userId, stockSymbol);
-	updateBalanceStoreUserLockedStocks(userId, stockSymbol, (takerPreviousLockedStocks + quantity));
-
-
-	console.log("hi 2")
-
-	console.log(ORDERBOOK_STORE_INDEX[stockSymbol].bid)
+	const orderTotalCost = quantity * userPrice;
+	let totalCostSpent = 0;
 
 	for(let i = ORDERBOOK_STORE_INDEX[stockSymbol].bid.length - 1 ; i >= 0  ; i--){
 		
 		const price = ORDERBOOK_STORE_INDEX[stockSymbol].bid[i]!;
-		console.log("orderbook index",ORDERBOOK_STORE_INDEX[stockSymbol].bid)
-		console.log(price)
-
 
 		if(price < userPrice && fullFilledQuantity != quantity){
 			actionCreateAsk(userId, stockSymbol, (quantity - fullFilledQuantity) ,userPrice);
@@ -155,16 +140,8 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 		
 		const bidInfo = ORDERBOOK_STORE[stockSymbol].bid[price]
 
-		console.log("hi 3")
-
-		console.log(bidInfo)
-		console.log(price)
-		console.log(ORDERBOOK_STORE[stockSymbol])
-
 		if(!bidInfo) return
 		if(!ORDERBOOK_STORE[stockSymbol] || !ORDERBOOK_STORE[stockSymbol].bid[price]) return;
-
-		console.log("hi 4")
 
 		//complete fullfillment of ask order
 		if(bidInfo.remainingQuantity == (quantity - fullFilledQuantity)){
@@ -173,7 +150,8 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 			delete ORDERBOOK_STORE[stockSymbol].bid[price];
 
 			//partial fullfillment of ask order --> implies requested amount > available bids
-			console.log(bidInfo.orders)
+			totalCostSpent = totalCostSpent + (bidInfo.remainingQuantity * price);
+
 			updateBalancesAndStockForAskOrder(stockSymbol, userId, bidInfo.orders[0]?.userId!, bidInfo.remainingQuantity, price);
 			count++;
 			break;
@@ -195,6 +173,8 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 				createdAt: new Date().toISOString()
 			})
 
+			totalCostSpent = totalCostSpent + ((quantity - fullFilledQuantity) * price);
+
 			//after all stocks are sold , update user balance and stocks in balance store
 			updateBalancesAndStockForAskOrder(stockSymbol, userId, bidInfo.orders[0]?.userId!, (quantity - fullFilledQuantity), price);
 
@@ -203,6 +183,8 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 
 		//update fullfilled quantity
 		fullFilledQuantity = fullFilledQuantity + bidInfo.remainingQuantity;
+
+		totalCostSpent = totalCostSpent + (bidInfo.remainingQuantity * price);
 
 		//delete bid entry from order book 
 			//tbd add fills db
@@ -236,17 +218,12 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 		count++;
 	}
 
-	console.log(count)
-	console.log("before",ORDERBOOK_STORE_INDEX[stockSymbol].bid)
-
 	while(count > 0){
 		ORDERBOOK_STORE_INDEX[stockSymbol].bid.pop();
 		count--;
 	}
 
-	console.log("after",ORDERBOOK_STORE_INDEX[stockSymbol].bid)
-	
-	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
+	return res.json(new HttpSuccessResponse(200, true, "Order Placed", {orderbook:ORDERBOOK_STORE[stockSymbol], balance:BALANCE_STORE}));
 }
 
 const handleOrderTypeMarket = (req:Request, res:Response , userId:string, stockSymbol:string, side:string, type:string, userPrice:number, quantity:number) => {

@@ -8,6 +8,7 @@ import userRouter from "./router/user.router.js"
 import stockRouter from "./router/stock.router.js"
 import { initBalancesBackup, initOrderBookBackup, loadBalanceBackup, loadOrderBookBackup } from "./memory-store/backup/backup-store.js";
 
+
 dotenv.config()
 
 //CONST DECLARATIONS
@@ -29,12 +30,11 @@ app.use("/api/stock", stockRouter);
 
 //Supporting Services
 loadBalanceBackup().then(()=>{
-  console.log("Balances Lodaded")
-  initBalancesBackup()
+  initBalancesBackup();
 })
 
 loadOrderBookBackup().then(()=>{
-  initOrderBookBackup()
+  initOrderBookBackup();
 })
 
 app.listen(PORT, () => {

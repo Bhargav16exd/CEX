@@ -41,7 +41,6 @@ export const readBalanceStoreUserTotalBalance = (userId:string) => {
     return BALANCE_STORE[userId].balance["inr"].total
 }
 export const readBalanceStoreUserLockedBalance = (userId:string) => {
-    console.log("balance store user id",BALANCE_STORE)
     //@ts-ignore
     return BALANCE_STORE[userId].balance["inr"].locked
 }
@@ -123,16 +122,10 @@ export const updateBalancesAndStockForBidOrder = (stockSymbol:string, takerId:st
     const takerPreviousTotalBalance = readBalanceStoreUserTotalBalance(takerId);
     const takerPreviousLockedBalance = readBalanceStoreUserLockedBalance(takerId);
 
-    console.log("takerpreviouslockedbalance", takerPreviousLockedBalance)
-    console.log("quantity", quantity)
-    console.log("price", price)
-
     //update taker
     updateBalanceStoreUserTotalStocks(takerId, stockSymbol, (takerPreviousTotalStocks + quantity));
     updateBalanceStoreUserTotalBalance(takerId, (takerPreviousTotalBalance - (quantity * price)));
     updateBalanceStoreUserLockedBalance(takerId, (takerPreviousLockedBalance - (quantity * price)));
-
-    console.log("takerpreviouslockedbalance after update", readBalanceStoreUserLockedBalance(takerId))
 
     // maker : reduce stocks , refresh locked stocks , increment the user balances
     

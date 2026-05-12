@@ -8,5 +8,4 @@ const router = Router();
 router.route("/signup").post(signup);
 router.route("/add-balance").patch(addBalance);
 
-
 export default router;

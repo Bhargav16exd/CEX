@@ -132,6 +132,7 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 	const takerPreviousLockedStocks = readBalanceStoreUserLockedStocks(userId, stockSymbol);
 	updateBalanceStoreUserLockedStocks(userId, stockSymbol, (takerPreviousLockedStocks + quantity));
 
+
 	console.log("hi 2")
 
 	console.log(ORDERBOOK_STORE_INDEX[stockSymbol].bid)
@@ -139,13 +140,13 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 	for(let i = ORDERBOOK_STORE_INDEX[stockSymbol].bid.length - 1 ; i >= 0  ; i--){
 		
 		const price = ORDERBOOK_STORE_INDEX[stockSymbol].bid[i]!;
-		console.log(ORDERBOOK_STORE_INDEX[stockSymbol].bid)
+		console.log("orderbook index",ORDERBOOK_STORE_INDEX[stockSymbol].bid)
 		console.log(price)
 
 
 		if(price < userPrice && fullFilledQuantity != quantity){
 			actionCreateAsk(userId, stockSymbol, (quantity - fullFilledQuantity) ,userPrice);
-			return res.json(new HttpSuccessResponse(200, true, "Order Placed",ORDERBOOK_STORE[stockSymbol]));
+			break;
 		}
 
 		if( price < userPrice || fullFilledQuantity == quantity){
@@ -157,6 +158,7 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 		console.log("hi 3")
 
 		console.log(bidInfo)
+		console.log(price)
 		console.log(ORDERBOOK_STORE[stockSymbol])
 
 		if(!bidInfo) return
@@ -171,6 +173,7 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 			delete ORDERBOOK_STORE[stockSymbol].bid[price];
 
 			//partial fullfillment of ask order --> implies requested amount > available bids
+			console.log(bidInfo.orders)
 			updateBalancesAndStockForAskOrder(stockSymbol, userId, bidInfo.orders[0]?.userId!, bidInfo.remainingQuantity, price);
 			count++;
 			break;
@@ -212,6 +215,12 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 			actionCreateAsk(userId, stockSymbol, remainingStocksToSell, price)
 		}
 
+		if(price == ORDERBOOK_STORE_INDEX[stockSymbol].bid[0]){
+			//add ask entry to the order book
+			const remainingStocksToSell = (quantity - fullFilledQuantity);
+			actionCreateAsk(userId, stockSymbol, remainingStocksToSell, userPrice);
+		}
+
 		//partial fullfillment of ask order --> implies requested amount > available bids
 
 		/*
@@ -227,10 +236,15 @@ const handlePriceAvailableForOrder = (req:Request, res:Response , userId:string,
 		count++;
 	}
 
+	console.log(count)
+	console.log("before",ORDERBOOK_STORE_INDEX[stockSymbol].bid)
+
 	while(count > 0){
 		ORDERBOOK_STORE_INDEX[stockSymbol].bid.pop();
 		count--;
 	}
+
+	console.log("after",ORDERBOOK_STORE_INDEX[stockSymbol].bid)
 	
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", ORDERBOOK_STORE[stockSymbol]));
 }

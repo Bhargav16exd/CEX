@@ -41,6 +41,7 @@ export const readBalanceStoreUserTotalBalance = (userId:string) => {
     return BALANCE_STORE[userId].balance["inr"].total
 }
 export const readBalanceStoreUserLockedBalance = (userId:string) => {
+    console.log("balance store user id",BALANCE_STORE)
     //@ts-ignore
     return BALANCE_STORE[userId].balance["inr"].locked
 }

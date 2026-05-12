@@ -87,7 +87,7 @@ const actionCreateBid = (userId:string , stockSymbol:string, quantity:number, pr
 		totalQuantity:quantity,
 		remainingQuantity:quantity,
 		orders:[{
-			userId:"1",
+			userId,
 			quantity,
 			filledQuantity:0,
 			orderId:"1",

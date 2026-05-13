@@ -2,7 +2,7 @@ import type { Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../utils/http.responses.js";
 import bcrypt from "bcrypt"
 import { prisma } from "../db/prisma.client.js";
-import { initUserInBalanceStore } from "../memory-store/balance/balance-store.js";
+
 
 const SALT_ROUNDS = 10 
 
@@ -41,7 +41,8 @@ const signup = async (req:Request, res:Response, next:any) => {
 		throw new HttpErrorResponse(500, false, "Internal Server Error");
 	}
 
-	initUserInBalanceStore(user);
+	//send this to queue
+	//initUserInBalanceStore(user);
 
 	res.json(new HttpSuccessResponse(201, true, "User Onboarded"));
 

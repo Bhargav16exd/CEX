@@ -1,7 +1,6 @@
 import type { Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../utils/http.responses.js"
-import { hanldeOrderSideAsk } from "../modules/order/ask.module.js";
-import { hanldeOrderSideBid } from "../modules/order/bid.module.js";
+
 
 // ------ Order Region Start -----
 /*
@@ -29,11 +28,11 @@ export const Order = (req:Request, res:Response) => {
 		}
 		
 		if(side == OrderSide.ASK){
-			hanldeOrderSideAsk(req, res , userId, stockSymbol, side, type, price, quantity);
+			//hanldeOrderSideAsk(req, res , userId, stockSymbol, side, type, price, quantity);
 		}
 
 		if(side == OrderSide.BID){
-			hanldeOrderSideBid(req, res , userId, stockSymbol, side, type, price, quantity);
+			//hanldeOrderSideBid(req, res , userId, stockSymbol, side, type, price, quantity);
 		}
 
 	} catch (error) {

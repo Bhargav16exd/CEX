@@ -15,31 +15,24 @@ export enum OrderType {
 	MARKET = "MARKET"
 } 
 
-export enum OrderSide {
-	ASK = "ASK",
-	BID = "BID"
-}
-
-export const Order = async (req:Request, res:Response) => {
+export const Order = async (req:Request, res:Response, next:any) => {
 	try {	
 		const {userId, stockSymbol, side, type, price, quantity} = req.body
 
 		if(!userId || !stockSymbol || !side || !type || !price || !quantity ){
 			throw new HttpErrorResponse(400, false, "Invalid Inputs");
 		}
-		
-		if(side == OrderSide.ASK){
-			const ress = await pushToQueue("create_order",req.body)
-			console.log("res",ress)
-			//hanldeOrderSideAsk(req, res , userId, stockSymbol, side, type, price, quantity);
-		}
 
-		if(side == OrderSide.BID){
-			//hanldeOrderSideBid(req, res , userId, stockSymbol, side, type, price, quantity);
+		const queueResponse = await pushToQueue("create_order",req.body);
+
+		if(queueResponse.ok == false){
+			throw new HttpErrorResponse(400,false, queueResponse.error || "Internal Server Errror");
 		}
+		
+		return res.json(new HttpSuccessResponse(200,true,"Order Placed", queueResponse.data!))!
 
 	} catch (error) {
-		console.log(error)
+		next(error)
 	}
 }
 // ------ Order Region End -----

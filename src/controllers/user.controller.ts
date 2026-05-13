@@ -3,7 +3,6 @@ import { HttpErrorResponse, HttpSuccessResponse } from "../utils/http.responses.
 import bcrypt from "bcrypt"
 import { prisma } from "../db/prisma.client.js";
 
-
 const SALT_ROUNDS = 10 
 
 //SIGNUP

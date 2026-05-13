@@ -1,5 +1,6 @@
 import type { Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../utils/http.responses.js"
+import { pushToQueue } from "../utils/engine-client.js";
 
 
 // ------ Order Region Start -----
@@ -19,7 +20,7 @@ export enum OrderSide {
 	BID = "BID"
 }
 
-export const Order = (req:Request, res:Response) => {
+export const Order = async (req:Request, res:Response) => {
 	try {	
 		const {userId, stockSymbol, side, type, price, quantity} = req.body
 
@@ -28,6 +29,8 @@ export const Order = (req:Request, res:Response) => {
 		}
 		
 		if(side == OrderSide.ASK){
+			const ress = await pushToQueue("create_order",req.body)
+			console.log("res",ress)
 			//hanldeOrderSideAsk(req, res , userId, stockSymbol, side, type, price, quantity);
 		}
 

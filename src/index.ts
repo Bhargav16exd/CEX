@@ -7,10 +7,11 @@ import cors from "cors"
 import userRouter from "./router/user.router.js"
 import stockRouter from "./router/stock.router.js"
 import { randomUUID } from "crypto";
+import { connectRedis, pingRedis } from "./utils/engine-client.js";
+import { SERVER_INSTANCE_ID } from "./config.js";
+import { listenEngineResponses } from "./utils/enginer-responses-orchestrator.js";
 
 dotenv.config();
-
-const SERVER_INSTACE_ID = randomUUID();
 
 //CONST DECLARATIONS
 const PORT = process.env.PORT || 6969;
@@ -28,7 +29,6 @@ app.use(cors({
 //Routes
 app.use("/api/user", userRouter);
 app.use("/api/stock", stockRouter);
-
 
 // Error Handler
 app.use((
@@ -49,5 +49,11 @@ app.use((
 });
 
 app.listen(PORT, () => {
-  console.log(`Server instance : ${SERVER_INSTACE_ID} is running at http://localhost:${PORT}`);
+  console.log(`Server instance : ${SERVER_INSTANCE_ID} is running at http://localhost:${PORT}`);
+
+  connectRedis();
+  listenEngineResponses();
+  pingRedis().then((data)=>{
+    console.log(data)
+  })
 });

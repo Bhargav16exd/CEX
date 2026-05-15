@@ -5,8 +5,8 @@ import cors from "cors"
 
 //route imports
 import userRouter from "./router/user.router.js"
-import stockRouter from "./router/stock.router.js"
-import { randomUUID } from "crypto";
+import spotMarketRouter from "./router/stock.router.js"
+import perpetualMarketRouter from "../src/router/perpetual.market.router.js"
 import { connectRedis, pingRedis } from "./utils/engine-client.js";
 import { SERVER_INSTANCE_ID } from "./config.js";
 import { listenEngineResponses } from "./utils/enginer-responses-orchestrator.js";
@@ -28,7 +28,8 @@ app.use(cors({
 
 //Routes
 app.use("/api/user", userRouter);
-app.use("/api/stock", stockRouter);
+app.use("/api/stock/spot", spotMarketRouter);
+app.use("/api/stock/perpetual", perpetualMarketRouter);
 
 // Error Handler
 app.use((

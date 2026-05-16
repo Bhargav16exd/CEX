@@ -2,9 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 import { HttpErrorResponse } from "../utils/http.responses.js";
 import { hanldeLongOrders } from "../module/perpetual/order-handler/long.handler.js";
 import { hanldeShortOrders } from "../module/perpetual/order-handler/short.handler.js";
+import { reduceOnlyGuard } from "../module/perpetual/utils/perp-guards.js";
 
 
-export enum MarketOrderSide {
+export enum OrderSide {
 	"LONG" = "LONG",
 	"SHORT" = "SHORT"
 }
@@ -12,22 +13,25 @@ export enum MarketOrderSide {
 export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 
 	try {
-		const {userId ,stockSymbol, type, side, price, quantity} = req.body;
 
-		if(!userId || !stockSymbol || !type || !side || !price || !quantity){
+		const {userId ,stockSymbol, type, side, price, quantity, collateral, reduceOnly} = req.body;
+		
+		if(!userId || !stockSymbol || !type || !side || !price || !quantity || !collateral || reduceOnly === undefined){
 			throw new HttpErrorResponse(400, false, "Invalid Inputs");
 		}
 
-		if(side == MarketOrderSide.LONG){
-			hanldeLongOrders(req, res, userId ,stockSymbol, type, side, price, quantity);
+		reduceOnlyGuard(reduceOnly, side, quantity, userId, stockSymbol);
+
+		if(side == OrderSide.LONG){
+			return hanldeLongOrders({ req, res, userId, stockSymbol, type, side, price, quantity, collateral, reduceOnly });
 		}
 
-		if(side == MarketOrderSide.SHORT){
-			hanldeShortOrders(req, res, userId ,stockSymbol, type, side, price, quantity);
+		if(side == OrderSide.SHORT){
+			return hanldeShortOrders({ req, res, userId, stockSymbol, type, side, price, quantity, collateral, reduceOnly });
 		}
 
 			
 	} catch (error) {
-			
+		next(error)		
 	}
 }

@@ -1,3 +1,4 @@
+import { WebSocket } from "node:http";
 import type { EngineResponseType } from "../types/engine.js";
 import { ENGINE_RESPONSE_QUEUE, subscriber } from "./engine-client.js";
 
@@ -34,8 +35,7 @@ export const registerResponseCallBack = (
 
 export const listenEngineResponses = async ():Promise<void> => {
 	for(;;){
-		
-		const response = await subscriber.brPop(ENGINE_RESPONSE_QUEUE, 0);
+		const response = await subscriber.brPop(ENGINE_RESPONSE_QUEUE,10);
 		if(!response) continue
 
 		try {
@@ -56,4 +56,14 @@ const resolveEngineResponse = (response: EngineResponseType) => {
 	unresolvedResponse.resolve(response);
 }
 
+export const listenIndexPrices = async () => {
+	const ws = new WebSocket(
+	"wss://dstream.binance.com/ws/solusd@indexPrice"
+	);
 
+	ws.onmessage = (event) => {
+	const data = JSON.parse(event.data);
+	console.log(data);
+	console.log("PRICE:", data.p);
+	};
+} 

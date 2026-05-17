@@ -1,14 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 import { HttpErrorResponse } from "../utils/http.responses.js";
-import { hanldeLongOrders } from "../module/perpetual/order-handler/long.handler.js";
-import { hanldeShortOrders } from "../module/perpetual/order-handler/short.handler.js";
 import { reduceOnlyGuard } from "../module/perpetual/utils/perp-guards.js";
+import { OrderSide } from "../module/perpetual/types/perp-types.js";
+import { hanldeLongOrders } from "../module/perpetual/handlers/order-handler/long.handler.js";
+import { hanldeShortOrders } from "../module/perpetual/handlers/order-handler/short.handler.js";
 
-
-export enum OrderSide {
-	"LONG" = "LONG",
-	"SHORT" = "SHORT"
-}
 
 export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 

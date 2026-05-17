@@ -1,4 +1,4 @@
-import { CONTRACT_STORE, updateContractStoreUserContractUnrealizedPnL } from "../module/perpetual/contracts/contracts-store.js";
+import { CONTRACT_STORE, updateContractStoreUserContractUnrealizedPnL } from "../module/perpetual/memory/contracts/contracts-store.js";
 
 let INDEX_PRICE = 0;
 

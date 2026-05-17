@@ -1,4 +1,4 @@
-import { CONTRACT_STORE, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, removeUserIdFromCounterPartId, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractCounterPartId, updateContractStoreUserContractQuantity } from "../contracts/contracts-store.js";
+import { CONTRACT_STORE, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractQuantity, removeUserIdFromCounterPartId, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractCounterPartId, updateContractStoreUserContractQuantity } from "../memory/contracts/contracts-store.js";
 
 
 const MARKET_PRICE = 100;

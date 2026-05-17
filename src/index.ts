@@ -10,8 +10,8 @@ import perpetualMarketRouter from "../src/router/perpetual.market.router.js"
 import { connectRedis, pingRedis } from "./utils/engine-client.js";
 import { SERVER_INSTANCE_ID } from "./config.js";
 import { listenEngineResponses } from "./utils/enginer-responses-orchestrator.js";
-import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "./module/perpetual/orderbook/prep-orderbook.js";
-import PERPETUAL_BALANCE_STORE from "./module/perpetual/balances/perp-balances.js";
+import { PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "./module/perpetual/memory/orderbook/prep-orderbook.js";
+import PERPETUAL_BALANCE_STORE from "./module/perpetual/memory/balances/perp-balances.js";
 import { listenIndexPrices } from "./background-services/fetcher-index-price.js";
 
 dotenv.config();

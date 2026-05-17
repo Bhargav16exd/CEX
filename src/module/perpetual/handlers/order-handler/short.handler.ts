@@ -1,25 +1,29 @@
 import type { Request, Response } from "express";
-import { addPriceToOrderBookIndex, createOrder, fetchFullFilledQuantityFromOrderId, ORDERS, PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateOrderFullFilledQuantity } from "../orderbook/prep-orderbook.js";
-import { HttpErrorResponse, HttpSuccessResponse } from "../../../utils/http.responses.js";
-import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../balances/perp-balances.js";
-import { OrderType, updateOrderOfMakers, type OrderInputPayload } from "./long.handler.js";
-import { hanldeContracts } from "../contract-handler/contract.handler.js";
-import { CONTRACT_STORE } from "../contracts/contracts-store.js";
+import { type OrderInputPayload } from "./long.handler.js";
 import { randomUUID } from "crypto";
+import { actionCreateShort, updateOrderOfMakers } from "./utils.js";
+import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
+import { HttpErrorResponse, HttpSuccessResponse } from "../../../../utils/http.responses.js";
+import { OrderType } from "../../types/perp-types.js";
+import { createOrder, fetchFullFilledQuantityFromOrderId, PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateOrderFullFilledQuantity } from "../../memory/orderbook/prep-orderbook.js";
 
 
 export const hanldeShortOrders = (payload: OrderInputPayload) => {
 
 	const { req, res, userId, stockSymbol, type, side, price, quantity, collateral, reduceOnly } = payload;
 
-	//check if total user balance if enough for given collateral
+  /*
+  ------ SECTION - 1 -----
+	INFO : Check if user has sufficient balance for collateral, 
+	if not return error, if yes , update locked balance and proceed with order placement 
+  -----------------------
+	*/
 	const userAvailableBalance = readBalanceStoreUserTotalBalance(userId) - readBalanceStoreUserLockedBalance(userId);
-
 	if(userAvailableBalance < collateral){
 		throw new HttpErrorResponse(400, false, "Not Enough Balance for Collateral")
 	}
 
-	//if enough , update locked balance
+	//READ AND UPDATE USER LOCKER BALANCE
 	const previousUserLockedBalance = readBalanceStoreUserLockedBalance(userId);
 	updateBalanceStoreUserLockedBalance(userId, (previousUserLockedBalance + collateral));
 
@@ -37,8 +41,10 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 	if(!PERPETUAL_ORDERBOOK_STORE[stockSymbol]) return
 	if(!PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol] || !PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long) return
 
+  //UTILS AND DECLARTIONS
 	const orderbook_long_index_length = PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long.length
 
+  //CREATE ORDER
 	const orderId = randomUUID();
 	createOrder(orderId, stockSymbol, userPrice, quantity, "short", userId);
 
@@ -49,8 +55,10 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 			userPrice > PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long[orderbook_long_index_length - 1]!
 		)
 	){
-
+    //IF THERE EXIST AN LONG ORDER AT THE SAME PRICE
+    //WE SIMPLY UPDATE THE QUANTITY OF THAT ORDER INSTEAD OF CREATING NEW ENTRY IN THE ORDERBOOK
 		if(PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[userPrice]){
+
 			const totalQuantity = PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[userPrice].totalQuantity
 			const remainingQuantity = PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[userPrice].remainingQuantity
 
@@ -68,8 +76,7 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 			return res.json(new HttpSuccessResponse(200, true, "Order Placed",PERPETUAL_ORDERBOOK_STORE[stockSymbol]))
 		}
 		else{
-
-			//create long
+      //if there exist no LONG order at same price , create SHORT
 			actionCreateShort(userId, stockSymbol, userPrice, quantity, orderId);
 			return res.json(new HttpSuccessResponse(200, true, "Order Placed", PERPETUAL_ORDERBOOK_STORE[stockSymbol]));
 		}
@@ -101,39 +108,49 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 			break;
 		}
 
+    // ----- FETCH LONG INFO AT THAT PRICE -----
 		const longInfo = PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.long[price]!
 
-		if(longInfo?.remainingQuantity == (userQuantity - fullfilledQuantity)){
+    /*
+      ------ SECTION 2 ------
+			INFO : We check if the available quantity at that price bracket is sufficient to fulfill user requirements
+			-----------------------
+		*/
 
+		if(longInfo?.remainingQuantity == (userQuantity - fullfilledQuantity)){
+      //update orders of makers
 			updateOrderOfMakers(longInfo.makerIds, longInfo?.remainingQuantity);
+
+      //update order of taker
+      updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);
 
 			//delete 
 			delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[price];
-
-			//hanldeContracts(stockSymbol, longInfo.remainingQuantity, price, longInfo.orders[0]!.userId, userId, collateral);
-			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);
 
 			count++;
 			break;
 		}
 
 		if(longInfo?.remainingQuantity > (userQuantity - fullfilledQuantity)){
-
+      //upate orders of makers
 			updateOrderOfMakers(longInfo.makerIds, (userQuantity - fullfilledQuantity));
+
+      //update orders of takers
+      updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
 
 			//update remaining quanitity in the stock
 			const remainingStockQuantity = longInfo.remainingQuantity;
 			PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[price]!.remainingQuantity = remainingStockQuantity - (userQuantity - fullfilledQuantity);
-		
-			//hanldeContracts(stockSymbol, (userQuantity - fullfilledQuantity), price, longInfo.orders[0]!.userId, userId, collateral);
-			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
 
 			break;
 		}
 
-		//if code reaches here , it means , the available quantity of certain stock doesnt fullfill user requriements
-
+    //upate order of makers
 		updateOrderOfMakers(longInfo.makerIds, (userQuantity - fullfilledQuantity));
+
+    //upate order of taker
+    updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);
+
 
 		//update fullfilled quantity
 		fullfilledQuantity = fullfilledQuantity + longInfo.remainingQuantity;
@@ -145,15 +162,10 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 		}
 
-
 		if(price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].long[0]){
 			actionCreateShort(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 		}
-
 		count ++;
-
-		//hanldeContracts(stockSymbol, longInfo.remainingQuantity, price, longInfo.orders[0]!.userId, userId, collateral);
-		updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + longInfo.remainingQuantity);
 	}
 
 
@@ -164,29 +176,9 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 	//update taker
 	updateOrderFullFilledQuantity(orderId, fullfilledQuantity);
-	console.log("ORDERS", ORDERS)
 
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", PERPETUAL_ORDERBOOK_STORE[stockSymbol]));
 }
 
-const actionCreateShort = (userId:string, stockSymbol:string, userPrice:number, quantity:number, orderId:string) => {
-
-	if(!PERPETUAL_ORDERBOOK_STORE[stockSymbol]) return
-
-	PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[userPrice] = {
-		totalQuantity:quantity,
-		remainingQuantity:quantity,
-		makerIds:{
-			[userId]:[orderId],
-		},
-		takerIds:{}
-	}
-
-	addPriceToOrderBookIndex(stockSymbol, "short", userPrice)
-
-	return true
-}
-
 const handleOrderTypeMarket = () => {
-
 }

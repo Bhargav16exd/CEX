@@ -1,6 +1,6 @@
 import { OrderSide } from "../../../controllers/perpetual.stock.controller.js"
 import { HttpErrorResponse } from "../../../utils/http.responses.js";
-import { readBalanceStoreUserActiveContractQuantity } from "../contracts/contracts-store.js"
+import { readContractStoreUserContractQuantity } from "../contracts/contracts-store.js"
 
 /**
  * Validates whether a reduce-only order is allowed.
@@ -24,7 +24,7 @@ export const reduceOnlyGuard = (reduceOnly:boolean, side:string, quantity:number
 	if(reduceOnly === false) return
 
 	if(reduceOnly === true && side == OrderSide.LONG){
-		const userAvailableActiveContracts = readBalanceStoreUserActiveContractQuantity(userId, stockSymbol);
+		const userAvailableActiveContracts = readContractStoreUserContractQuantity(userId, stockSymbol);
 		if(quantity > userAvailableActiveContracts){
 			throw new HttpErrorResponse(400, false, "Reduce Only Order Error Type:[LONG]");
 		}
@@ -32,9 +32,9 @@ export const reduceOnlyGuard = (reduceOnly:boolean, side:string, quantity:number
 	}
 
 	if(reduceOnly === true && side == OrderSide.SHORT){
-		const userAvailableActiveContracts = readBalanceStoreUserActiveContractQuantity(userId, stockSymbol);
+		const userAvailableActiveContracts = readContractStoreUserContractQuantity(userId, stockSymbol);
 		if(Math.abs(quantity) > Math.abs(userAvailableActiveContracts)){
-			throw new HttpErrorResponse(400, false, "Reduce Only Order Error Type:[LONG]");
+			throw new HttpErrorResponse(400, false, "Reduce Only Order Error Type:[SHORT]");
 		}		
 	}
 

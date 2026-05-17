@@ -12,4 +12,5 @@ interface ContractType {
     avg_price:number;
     collateral:number;
     unrealizedPnL:number;
+    counterPartId?:Array<string>;
 }

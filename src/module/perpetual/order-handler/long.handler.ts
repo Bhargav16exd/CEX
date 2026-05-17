@@ -1,10 +1,9 @@
 import type { Request, Response } from "express";
-import { addPriceToOrderBookIndex, PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX } from "../orderbook/prep-orderbook.js";
+import { addPriceToOrderBookIndex, fetchFullFilledQuantityFromOrderId, ORDERS, PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateOrderFullFilledQuantity } from "../orderbook/prep-orderbook.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../../utils/http.responses.js";
 import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../balances/perp-balances.js";
-import { hanldeContracts } from "../contract-handler/contract.handler.js";
-import { CONTRACT_STORE } from "../contracts/contracts-store.js";
-
+import {createOrder} from "../orderbook/prep-orderbook.js"
+import { randomUUID } from "crypto";
 
 export enum OrderType {
 	LIMIT = "LIMIT",
@@ -55,7 +54,8 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 
 	const orderbook_short_index_length = PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short.length
 
-	//lock amounts
+	const orderId = randomUUID();
+	createOrder(orderId, stockSymbol, userPrice, quantity, "long", userId);
 
 	if(
 		!PERPETUAL_ORDERBOOK_STORE[stockSymbol]?.short[userPrice] 
@@ -72,20 +72,29 @@ const handleOrderTypeLimit = (req: Request, res: Response, userId: string, stock
 			PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[userPrice].totalQuantity = totalQuantity + quantity
 			PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[userPrice].remainingQuantity = remainingQuantity + quantity
 
+			const isUserAlreadyInSameOrder = PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[userPrice].makerIds[userId] ? true : false;
+
+			if(!isUserAlreadyInSameOrder){
+				PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[userPrice].makerIds[userId] = [orderId];
+			}
+			else{
+				PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[userPrice].makerIds[userId]!.push(orderId);
+			}
+
 			return res.json(new HttpSuccessResponse(200, true, "Order Placed",PERPETUAL_ORDERBOOK_STORE[stockSymbol]))
 		}
 		else{
 
 			//create long
-			actionCreateLong(userId, stockSymbol, userPrice, quantity)
+			actionCreateLong(userId, stockSymbol, userPrice, quantity, orderId)
 			return res.json(new HttpSuccessResponse(200, true, "Order Placed", PERPETUAL_ORDERBOOK_STORE[stockSymbol]));
 		}
 	}
 
-	handlePriceNotAvailableInLimitOrder(req, res, userId, stockSymbol, type, side, userPrice, quantity, collateral);
+	handlePriceNotAvailableInLimitOrder(req, res, userId, stockSymbol, type, side, userPrice, quantity, collateral, orderId);
 }
 
-const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId: string, stockSymbol: string, type: string, side: string, userPrice: number, userQuantity: number, collateral: number) => {
+const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId: string, stockSymbol: string, type: string, side: string, userPrice: number, userQuantity: number, collateral: number, orderId: string) => {
 
 	let fullfilledQuantity = 0;
 	let totalAmountSpent = 0;
@@ -98,7 +107,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 	for(const price of PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short){
 
 		if(price > userPrice &&  fullfilledQuantity != userQuantity){
-			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity));
+			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 			break;
 		}
 
@@ -111,12 +120,15 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 		if(shortInfo?.remainingQuantity == (userQuantity - fullfilledQuantity)){
 
+			updateOrderOfMakers(shortInfo.makerIds, shortInfo.remainingQuantity);
+
 			//delete 
 			delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price];
 
 			count++;
 
-			hanldeContracts(stockSymbol, shortInfo.remainingQuantity, price, userId, shortInfo.orders[0]!.userId, collateral)
+			//hanldeContracts(stockSymbol, shortInfo.remainingQuantity, price, userId, shortInfo.orders[0]!.userId, collateral)
+			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
 
 			break;
 		}
@@ -127,22 +139,19 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 			//update remaining quanitity in the stock
 			const remainingStockQuantity = shortInfo.remainingQuantity;
 
+			updateOrderOfMakers(shortInfo.makerIds, (userQuantity - fullfilledQuantity));
 
 			PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price]!.remainingQuantity = remainingStockQuantity - (userQuantity - fullfilledQuantity);
-			PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price]?.orders.push({
-				userId,
-				quantity:shortInfo.totalQuantity,
-				filledQuantity:(userQuantity - fullfilledQuantity),
-				orderId:"1",
-				createdAt: new Date().toISOString()
-			})
-
-			hanldeContracts(stockSymbol, (userQuantity - fullfilledQuantity), price, userId, shortInfo.orders[0]!.userId, collateral)
+			
+			//hanldeContracts(stockSymbol, (userQuantity - fullfilledQuantity), price, userId, shortInfo.orders[0]!.userId, collateral)
+			updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + (userQuantity - fullfilledQuantity));
 
 			break;
 		}
 
 		//if code reaches here , it means , the available quantity of certain stock doesnt fullfill user requriements
+
+		updateOrderOfMakers(shortInfo.makerIds, (userQuantity - fullfilledQuantity));
 
 		//update fullfilled quantity
 		fullfilledQuantity = fullfilledQuantity + shortInfo.remainingQuantity;
@@ -151,50 +160,80 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 		delete PERPETUAL_ORDERBOOK_STORE[stockSymbol].short[price];
 
 		if(price == userPrice){
-			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity));
+			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 		}
 
 
 		if(price == PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short[orderbook_short_index_length-1]){
-			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity));
+			actionCreateLong(userId, stockSymbol, userPrice, (userQuantity - fullfilledQuantity), orderId);
 		}
 
 		count ++;
 
-		hanldeContracts(stockSymbol, shortInfo.remainingQuantity, price, userId, shortInfo.orders[0]!.userId, collateral)
+		//hanldeContracts(stockSymbol, shortInfo.remainingQuantity, price, userId, shortInfo.orders[0]!.userId, collateral);
+		updateOrderFullFilledQuantity(orderId, fetchFullFilledQuantityFromOrderId(orderId) + shortInfo.remainingQuantity);
 	}
 
-	while(count > 0 ){
+	while(count > 0){
 		PERPETUAL_ORDERBOOK_STORE_INDEX[stockSymbol].short.shift();
 		count--;
 	}
 
-	console.log("CONTRACT STORE", CONTRACT_STORE)
+	console.log("ORDERS", ORDERS)
 
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", PERPETUAL_ORDERBOOK_STORE[stockSymbol]));
 }
 
-const actionCreateLong = (userId:string, stockSymbol:string, userPrice:number, quantity:number) => {
+const actionCreateLong = (userId:string, stockSymbol:string, userPrice:number, quantity:number, orderId:string) => {
 
 	if(!PERPETUAL_ORDERBOOK_STORE[stockSymbol]) return
 
 	PERPETUAL_ORDERBOOK_STORE[stockSymbol].long[userPrice] = {
 		totalQuantity:quantity,
 		remainingQuantity:quantity,
-		orders:[{
-			userId,
-			quantity,
-			filledQuantity:0,
-			orderId:"1",
-			createdAt: new Date().toISOString()
-		}]
+		makerIds:{
+			[userId]: [orderId]
+		},
+		takerIds:{}
 	}
 
 	addPriceToOrderBookIndex(stockSymbol, "long", userPrice)
-
 	return true
 }
 
 const handleOrderTypeMarket = () => {
+
+}
+
+export const updateOrderOfMakers = (userIds: Record<string,Array<string>>, quantity: number) => {
+
+	/*
+	 input quantity is remaining quantitiy left for that price bracket
+	 userIds: { <userId>: [orderId1, orderId2]  , <userId2>: [orderId3, orderId4] }
+	*/
+
+	/*
+   we traverse over each order and upates their fullfilled quantity  
+	*/
+
+	let fullfilledQuantity = 0;
+
+	for(const userId in userIds){
+
+		userIds[userId]?.forEach((orderId)=>{
+
+			const order = ORDERS[orderId]
+
+			if(order?.quantity! <= (quantity - fullfilledQuantity)){
+				updateOrderFullFilledQuantity(orderId, order?.quantity!);
+				fullfilledQuantity = fullfilledQuantity + order?.quantity!
+			}
+			else{
+				updateOrderFullFilledQuantity(orderId, order?.fullFilledQuantity! + (quantity - fullfilledQuantity))
+			}
+
+		})
+
+	}
 
 }

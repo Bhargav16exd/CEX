@@ -27,11 +27,6 @@ interface LongType {
 interface TransactionEntityType {
     totalQuantity:number;
     remainingQuantity:number;
-    orders:{
-        userId:string
-        quantity:number
-        filledQuantity:number
-        orderId:string
-        createdAt:string
-    }[]
+    makerIds:Record<string, Array<string>>; // userId:orderId
+    takerIds:Record<string, Array<string>>; // userId:orderId
 }

@@ -83,8 +83,11 @@ export const updateContractStoreUserContractUnrealizedPnL = (userId:string, stoc
 	CONTRACT_STORE[userId][stockSymbol].unrealizedPnL = value
 }
 export const updateContractStoreUserContractCounterPartId = (userId:string, stockSymbol:string, value:string) => {
-	//@ts-ignore
-	CONTRACT_STORE[userId][stockSymbol].counterPartId.push(value)
+  //@ts-ignore
+  if(!CONTRACT_STORE[userId][stockSymbol].counterPartId.includes(value)){
+    //@ts-ignore
+    CONTRACT_STORE[userId][stockSymbol].counterPartId.push(value)
+  }
 }
 export const removeUserIdFromCounterPartId = (userId:string, stockSymbol:string, value:string) => {	
 	//@ts-ignore

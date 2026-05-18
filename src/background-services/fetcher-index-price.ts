@@ -1,6 +1,6 @@
 import { CONTRACT_STORE, updateContractStoreUserContractUnrealizedPnL } from "../module/perpetual/memory/contracts/contracts-store.js";
 
-let INDEX_PRICE = 0;
+let INDEX_PRICE = 85;
 
 export const listenIndexPrices = async () => {
 
@@ -19,8 +19,20 @@ const recalculatePnL = () => {
 	Object.keys(CONTRACT_STORE!).forEach((userId)=>{
 		//@ts-ignore
 		const userMetaData = CONTRACT_STORE[userId]["sol"]!
-		const PnL = ((Math.trunc(INDEX_PRICE) - userMetaData.avg_price) * userMetaData.contract_quantity);
 
+    if(!userMetaData){
+      return
+    };
+
+    let PnL = 0;
+
+    if(userMetaData.contract_quantity > 0){
+      PnL = (userMetaData.avg_price  - Math.trunc(INDEX_PRICE)) * Math.abs(userMetaData.contract_quantity)
+    }
+    else if(userMetaData.contract_quantity < 0){
+      PnL = (Math.trunc(INDEX_PRICE) - userMetaData.avg_price) * Math.abs(userMetaData.contract_quantity);
+    }
+		
 		updateContractStoreUserContractUnrealizedPnL(userId, "sol", PnL);
 	})
 }

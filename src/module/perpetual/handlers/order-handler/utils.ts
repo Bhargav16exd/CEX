@@ -1,4 +1,6 @@
-import { addPriceToOrderBookIndex, ORDERS, PERPETUAL_ORDERBOOK_STORE, updateOrderFullFilledQuantity } from "../memory/orderbook/prep-orderbook.js";
+import { addPriceToOrderBookIndex, ORDERS, PERPETUAL_ORDERBOOK_STORE, updateOrderFullFilledQuantity} from "../../memory/orderbook/prep-orderbook.js"
+import { OrderSide } from "../../types/perp-types.js"
+import { hanldeContracts } from "../contract-handler/contract.handler.js"
 
 export const actionCreateLong = (userId:string, stockSymbol:string, userPrice:number, quantity:number, orderId:string) => {
 
@@ -35,7 +37,7 @@ export const actionCreateShort = (userId:string, stockSymbol:string, userPrice:n
 	return true
 }
 
-export const updateOrderOfMakers = (userIds: Record<string,Array<string>>, quantity: number) => {
+export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<string>>, quantity: number, takerId:string, OrderSideInput:OrderSide) => {
 	/*
 	------- INPUT INFO -------	
 	quantity : input quantity is remaining quantitiy left for that price bracket
@@ -56,18 +58,29 @@ export const updateOrderOfMakers = (userIds: Record<string,Array<string>>, quant
 
 		userIds[userId]?.forEach((orderId)=>{
 
-			const order = ORDERS[orderId]
+			const order = ORDERS[orderId];  
+      let pos = 0;
 
 			if(order?.quantity! <= (quantity - fullfilledQuantity)){
 				updateOrderFullFilledQuantity(orderId, order?.quantity!);
 				fullfilledQuantity = fullfilledQuantity + order?.quantity!
+        pos = order?.quantity!
 			}
 			else{
 				updateOrderFullFilledQuantity(orderId, order?.fullFilledQuantity! + (quantity - fullfilledQuantity))
+        pos = (quantity - fullfilledQuantity);
 			}
 
+      if(OrderSideInput == OrderSide.LONG){
+        hanldeContracts("sol", pos, order?.price!, takerId, userId, true);
+      }
+      else if(OrderSideInput == OrderSide.SHORT){
+        hanldeContracts("sol", pos, order?.price!, userId, takerId, true);
+      }
+      
 		})
 
 	}
 
 }
+

@@ -1,6 +1,6 @@
-import { OrderSide } from "../../../controllers/perpetual.stock.controller.js"
 import { HttpErrorResponse } from "../../../utils/http.responses.js";
 import { readContractStoreUserContractQuantity } from "../memory/contracts/contracts-store.js"
+import { OrderSide } from "../types/perp-types.js";
 
 /**
  * Validates whether a reduce-only order is allowed.

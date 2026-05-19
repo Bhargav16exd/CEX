@@ -6,8 +6,7 @@ export const CONTRACT_STORE:ContractsStoreType = {
 			contract_quantity:0,
 			avg_price:0,
 			collateral:0,
-			unrealizedPnL:0,
-			counterPartId:[]
+			unrealizedPnL:0
 		}
 	},
 	"12":{
@@ -15,8 +14,7 @@ export const CONTRACT_STORE:ContractsStoreType = {
 			contract_quantity:0,
 			avg_price:0,
 			collateral:0,
-			unrealizedPnL:0,
-			counterPartId:[]
+			unrealizedPnL:0
 		}
 	},
 	"13":{
@@ -24,8 +22,7 @@ export const CONTRACT_STORE:ContractsStoreType = {
 			contract_quantity:0,
 			avg_price:0,
 			collateral:0,
-			unrealizedPnL:0,
-			counterPartId:[]
+			unrealizedPnL:0
 		}
 	},
 	"14":{
@@ -33,8 +30,7 @@ export const CONTRACT_STORE:ContractsStoreType = {
 			contract_quantity:0,
 			avg_price:0,
 			collateral:0,
-			unrealizedPnL:0,
-			counterPartId:[]
+			unrealizedPnL:0
 		}
 	}
 }
@@ -57,10 +53,6 @@ export const readContractStoreUserContractUnrealizedPnL = (userId:string, stockS
 	//@ts-ignore
 	return CONTRACT_STORE[userId][stockSymbol].unrealizedPnL
 }
-export const readContractStoreUserContractCounterPartId = (userId:string, stockSymbol:string) => {
-	//@ts-ignore
-	return CONTRACT_STORE[userId][stockSymbol].counterPartId
-}
 
 // ----- CONTRACTS VALUES READ ----
 
@@ -81,20 +73,6 @@ export const updateContractStoreUserContractCollateral = (userId:string, stockSy
 export const updateContractStoreUserContractUnrealizedPnL = (userId:string, stockSymbol:string, value:number) => {
 	//@ts-ignore
 	CONTRACT_STORE[userId][stockSymbol].unrealizedPnL = value
-}
-export const updateContractStoreUserContractCounterPartId = (userId:string, stockSymbol:string, value:string) => {
-  //@ts-ignore
-  if(!CONTRACT_STORE[userId][stockSymbol].counterPartId.includes(value)){
-    //@ts-ignore
-    CONTRACT_STORE[userId][stockSymbol].counterPartId.push(value)
-  }
-}
-export const removeUserIdFromCounterPartId = (userId:string, stockSymbol:string, value:string) => {	
-	//@ts-ignore
-	//@ts-ignore
-	CONTRACT_STORE[userId][stockSymbol].counterPartId = CONTRACT_STORE[userId][stockSymbol]?.counterPartId?.filter(
-			(id: string) => id !== value
-		);
 }
 
 // ----- CONTRACTS VALUES UPDATE ----

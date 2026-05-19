@@ -1,37 +1,35 @@
 import type { PerpetualBalanceStoreType } from "./perp-balances-types.js";
 
-
-
 const PERPETUAL_BALANCE_STORE: PerpetualBalanceStoreType = {
 	"14":{
 		balance :{
 		"inr":{
-				total:1000,
-				locked:1000,
+				total:10000,
+				locked:0,
 			}
 		}
 	},
     "13":{
 		balance :{
 		"inr":{
-				total:1000,
-				locked:1000,
+				total:10000,
+				locked:0,
 			}
 		}
 	},
     "12":{
 		balance :{
 		"inr":{
-				total:1000,
-				locked:1000,
+				total:10000,
+				locked:0,
 			}
 		}
 	},
 	"11":{
 			balance: {
 			"inr": {
-					total: 1000,
-					locked: 1000,
+					total: 10000,
+					locked: 0,
 			},
 			}
 	}

@@ -179,16 +179,7 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
 
 	//update taker
 	updateOrderFullFilledQuantity(orderId, fullfilledQuantity);
-
-  console.log("CONTRACT STORE");
-  for(const key in CONTRACT_STORE){
-    console.log(key, CONTRACT_STORE[key]);
-  }
-
-  console.log("BALANCE STORE")
-  for(const key in PERPETUAL_BALANCE_STORE){
-    console.log(key, PERPETUAL_BALANCE_STORE[key]);
-  }
+  
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", PERPETUAL_ORDERBOOK_STORE[stockSymbol]));
 }
 

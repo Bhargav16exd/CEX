@@ -7,7 +7,7 @@ const PERPETUAL_BALANCE_STORE: PerpetualBalanceStoreType = {
 		balance :{
 		"inr":{
 				total:1000,
-				locked:0,
+				locked:1000,
 			}
 		}
 	},
@@ -15,7 +15,7 @@ const PERPETUAL_BALANCE_STORE: PerpetualBalanceStoreType = {
 		balance :{
 		"inr":{
 				total:1000,
-				locked:0,
+				locked:1000,
 			}
 		}
 	},
@@ -23,7 +23,7 @@ const PERPETUAL_BALANCE_STORE: PerpetualBalanceStoreType = {
 		balance :{
 		"inr":{
 				total:1000,
-				locked:0,
+				locked:1000,
 			}
 		}
 	},
@@ -31,7 +31,7 @@ const PERPETUAL_BALANCE_STORE: PerpetualBalanceStoreType = {
 			balance: {
 			"inr": {
 					total: 1000,
-					locked: 0,
+					locked: 1000,
 			},
 			}
 	}

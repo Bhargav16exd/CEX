@@ -91,11 +91,10 @@ export const updateContractStoreUserContractCounterPartId = (userId:string, stoc
 }
 export const removeUserIdFromCounterPartId = (userId:string, stockSymbol:string, value:string) => {	
 	//@ts-ignore
-	CONTRACT_STORE[userId][stockSymbol].counterPartId = CONTRACT_STORE[userId][stockSymbol]?.counterPartId?.filter((id:string)=>{
-		if(id === value){
-			return false;
-		}
-	})
+	//@ts-ignore
+	CONTRACT_STORE[userId][stockSymbol].counterPartId = CONTRACT_STORE[userId][stockSymbol]?.counterPartId?.filter(
+			(id: string) => id !== value
+		);
 }
 
 // ----- CONTRACTS VALUES UPDATE ----

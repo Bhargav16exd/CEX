@@ -1,47 +1,36 @@
-import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserTotalBalance } from "../../memory/balances/perp-balances.js";
+import { userInfo } from "node:os";
+import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance, updateBalanceStoreUserTotalBalance } from "../../memory/balances/perp-balances.js";
 import { CONTRACT_STORE, readContractStoreUserContractAvgPrice, readContractStoreUserContractCollateral, readContractStoreUserContractCounterPartId, readContractStoreUserContractQuantity, readContractStoreUserContractUnrealizedPnL, removeUserIdFromCounterPartId, updateContractStoreUserContractAvgPrice, updateContractStoreUserContractCollateral, updateContractStoreUserContractCounterPartId, updateContractStoreUserContractQuantity } from "../../memory/contracts/contracts-store.js";
 
 const MARKET_PRICE = 100;
 
-export const hanldeContracts = (stockSymbol:string, contract_quantity:number, price:number, personWhoLongedId:string, personWhoShortedId:string, reduceOnly:boolean) => {
+export const hanldeContracts = (stockSymbol:string, contract_quantity:number, price:number, personWhoLongedId:string, personWhoShortedId:string) => {
 
   const collateral = contract_quantity * price ;
 
-  const isLongOpenedToCloseContract = checkIsLongOrderClosingContract(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId);
-  const isShortOpenedToCloseContract = checkIsShortOrderClosingContract(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId);
+  const isLongClosingContract = checkIsLongOrderClosingContract(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId);
+  const isShortClosingContract = checkIsShortOrderClosingContract(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId);
+  
 
-	const orderLongResposne = OrderLongSettleContracts(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId, collateral);
-	const orderShortReponse = OrderShortSettleContracts(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId, collateral);
+  if(isLongClosingContract === true){
+    const personExitingLockedBalance = readBalanceStoreUserLockedBalance(personWhoLongedId);
+    updateBalanceStoreUserLockedBalance(personWhoLongedId, personExitingLockedBalance - collateral);
+  }
+  else if(isShortClosingContract === true){
+    const personExitingLockedBalance = readBalanceStoreUserLockedBalance(personWhoShortedId);
+    updateBalanceStoreUserLockedBalance(personWhoShortedId, personExitingLockedBalance - collateral);
+  }
 
-  console.log("is longed open to close contract",isLongOpenedToCloseContract)
-  console.log("is short open to close contract",isShortOpenedToCloseContract)
+  OrderLongSettleContracts(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId, collateral);
+	OrderShortSettleContracts(stockSymbol, contract_quantity, price, personWhoLongedId, personWhoShortedId, collateral);
 
-  if(isLongOpenedToCloseContract && orderLongResposne.referenceIds.length > 0 ){
-    //udpate short referece Ids
-    removeUserIdFromCounterPartId(personWhoShortedId, stockSymbol, personWhoLongedId)
-
-    orderLongResposne.referenceIds.forEach((userId)=>{
-      //update previous references IDs
-      updateContractStoreUserContractCounterPartId(personWhoShortedId, stockSymbol, userId);
-    })
-
+  if(isLongClosingContract === true){
     delete CONTRACT_STORE[personWhoLongedId]![stockSymbol]
   }
-
-  if(isShortOpenedToCloseContract && orderShortReponse.referenceIds.length > 0 ){
-    //udpate short referece Ids
-    removeUserIdFromCounterPartId(personWhoLongedId, stockSymbol, personWhoShortedId)
-
-    orderShortReponse.referenceIds.forEach((userId)=>{
-      //update previous references IDs
-      updateContractStoreUserContractCounterPartId(personWhoLongedId, stockSymbol, userId);
-    })
-    
+  else if(isShortClosingContract === true){
     delete CONTRACT_STORE[personWhoShortedId]![stockSymbol]
   }
-
 }
-
 
 const OrderLongSettleContracts = (stockSymbol:string, contract_quantity:number, price:number, personWhoLongedId:string, personWhoShortedId:string, collateral:number) => {
 
@@ -83,41 +72,9 @@ const OrderLongSettleContracts = (stockSymbol:string, contract_quantity:number, 
 
 		}
 		else if(personWhoLongedContractQuantity + contract_quantity === 0){
-
-      console.log("hi2", personWhoShortedId, personWhoLongedId)
-
-      //implies a condition where earlier person has longed and now the person has short to close the contract
-
-      const personWhoShortedEarlierId = personWhoLongedId;
-      const personWhoShortedEarlierPnL= readContractStoreUserContractUnrealizedPnL(personWhoLongedId, stockSymbol);
-      const personWhoShortedEarlierCollateral = readContractStoreUserContractCollateral(personWhoLongedId, stockSymbol);
-
-      const associatedPeopleWhoLongedInContract = readContractStoreUserContractCounterPartId(personWhoLongedId, stockSymbol)!;;
-
-      console.log("person who shorted earlier pnl",personWhoShortedEarlierPnL)
-
-      if(personWhoShortedEarlierPnL > 0){
-
-        associatedPeopleWhoLongedInContract.forEach((personWhoLongedEarlierId)=>{
-
-          removeUserIdFromCounterPartId(personWhoLongedEarlierId, stockSymbol, personWhoLongedId)
-
-          //update previous references IDs
-          updateContractStoreUserContractCounterPartId(personWhoLongedEarlierId, stockSymbol, personWhoShortedId);
-
-          const personWhoLongedEarlierPnL = readContractStoreUserContractUnrealizedPnL(personWhoLongedEarlierId, stockSymbol);
-          const personWhoLongedEarlierCollateral = readContractStoreUserContractCollateral(personWhoLongedEarlierId, stockSymbol);
-
-          contractsHelper(personWhoShortedEarlierId ,personWhoShortedEarlierId, stockSymbol, 
-            personWhoShortedEarlierPnL, personWhoLongedEarlierPnL, personWhoShortedEarlierCollateral, personWhoLongedEarlierCollateral);
-        })
-      }
-
-      return {
-        referenceIds:associatedPeopleWhoLongedInContract
-      }
-
-		}
+      //implies a condition where earlier person has shorted and now the person has longed to close the contract
+      closeContract(stockSymbol, personWhoLongedId);
+    }
 		else{
 
       //implies a condition where earlier person has shorted and now the person has longed to close the contract
@@ -173,32 +130,8 @@ const OrderShortSettleContracts = (stockSymbol:string, contract_quantity:number,
 		}
 		else if(personWhoShortedContractQuantity - contract_quantity === 0){
 
-      //implies a condition where earlier person has longed and now the person has short to close the contrac
-
-      console.log("hi", personWhoShortedId, personWhoLongedId)
-
-      const personWhoLongedEarlierId = personWhoShortedId;
-      const personWhoLongedEarlierPnL= readContractStoreUserContractUnrealizedPnL(personWhoShortedId, stockSymbol);
-      const personWhoLongedEarlierCollateral = readContractStoreUserContractCollateral(personWhoShortedId, stockSymbol);
-
-      const associatedPeopleWhoShortedInContract = readContractStoreUserContractCounterPartId(personWhoShortedId, stockSymbol)!;;
-
-      if(personWhoLongedEarlierPnL > 0){
-        associatedPeopleWhoShortedInContract.forEach((personWhoShortedEarlierId)=>{
-          console.log("this ids",personWhoShortedEarlierId)
-          removeUserIdFromCounterPartId(personWhoShortedEarlierId, stockSymbol, personWhoShortedId)
-          updateContractStoreUserContractCounterPartId(personWhoShortedEarlierId, stockSymbol, personWhoLongedId);
-
-          const personWhoShortedEarlierPnL= readContractStoreUserContractUnrealizedPnL(personWhoShortedEarlierId, stockSymbol);
-          const personWhoShortedEarlierCollateral = readContractStoreUserContractCollateral(personWhoShortedEarlierId, stockSymbol);
-          contractsHelper(personWhoLongedEarlierId , personWhoShortedEarlierId, stockSymbol, 
-            personWhoLongedEarlierPnL, personWhoShortedEarlierPnL, personWhoLongedEarlierCollateral, personWhoShortedEarlierCollateral);
-        })
-      }
-
-      return {
-        referenceIds:associatedPeopleWhoShortedInContract
-      }
+      //implies a condition where earlier person has longed and now the person has short to close the contract
+      closeContract(stockSymbol, personWhoShortedId);
 		}
 		else{
       //implies a condition where earlier person has longed and now the person has short to close the contract
@@ -272,44 +205,20 @@ const checkIsShortOrderClosingContract = (stockSymbol:string, contract_quantity:
 	}
 }
 
-const contractsHelper = (profitPersonId:string, lossPersonId:string, stockSymbol:string, 
-  profitPersonPnl:number, lossPersonPnl:number, profitPersonCollateral:number, lossPersonCollateral:number) => {
-   /*
-    ------ SECTION 1 --------
-    INFO : SECTION HANLDES PERSON WHO GAINS PROFIT IF LONGED 
-    -> READ BALANCEES
-    -> UPDATE BALANCES
-    -> READ CONTRACTS
-    -> UPDATE CONTRACT
-    -> DELETE CONTRACT FOR STOCK_SYMBOL
-    --------------------------
-    */
+const closeContract = (stockSymbol:string, userId:string) => {
 
-    //read data of person who profited
-    const userLongedTotalBalance = readBalanceStoreUserTotalBalance(profitPersonId);
-    const userLongedLockedBalance = readBalanceStoreUserLockedBalance(profitPersonId);
+  const personExitingPnL = readContractStoreUserContractUnrealizedPnL(userId, stockSymbol);
+  const personExitingCollateral = readContractStoreUserContractCollateral(userId, stockSymbol);
 
-    //update balances
-    updateBalanceStoreUserTotalBalance(profitPersonId, userLongedTotalBalance + profitPersonPnl);
-    updateBalanceStoreUserLockedBalance(profitPersonId, userLongedLockedBalance - profitPersonCollateral);
+  const personExitingTotalBalance = readBalanceStoreUserTotalBalance(userId);
+  const personExitingLockedBalance = readBalanceStoreUserLockedBalance(userId);
 
-    /*
-    ------ SECTION 2 --------
-    INFO : SECTION HANLDES PERSON WHO GOT IF SHORTED
-    -> READ BALANCEES
-    -> UPDATE BALANCES
-    -> READ CONTRACTS
-    -> UPDATE CONTRACT
-    -> DELETE CONTRACT FOR STOCK_SYMBOL
-    --------------------------
-    */
-
-    //read data of longed
-    const userShortedTotalBalance = readBalanceStoreUserTotalBalance(lossPersonId);
-    const userShortedLockedBalance = readBalanceStoreUserLockedBalance(lossPersonId);
-
-    //update balances
-    updateBalanceStoreUserTotalBalance(lossPersonId, userShortedTotalBalance - lossPersonPnl);
-    updateBalanceStoreUserLockedBalance(lossPersonId, userShortedLockedBalance - (lossPersonCollateral - lossPersonPnl));
-
+  if(personExitingPnL > 0){
+    updateBalanceStoreUserTotalBalance(userId, personExitingTotalBalance + personExitingPnL);
+    updateBalanceStoreUserLockedBalance(userId, personExitingLockedBalance - personExitingCollateral);
+  }
+  else if(personExitingPnL < 0){
+    updateBalanceStoreUserTotalBalance(userId, personExitingTotalBalance + personExitingPnL);
+    updateBalanceStoreUserLockedBalance(userId, personExitingLockedBalance - ( personExitingCollateral + personExitingPnL));
+  }
 }

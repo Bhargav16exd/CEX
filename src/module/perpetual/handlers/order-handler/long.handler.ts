@@ -21,7 +21,10 @@ export type OrderInputPayload = {
 }
 
 export const hanldeLongOrders = (payload: OrderInputPayload) => {
-	const { req, res, userId, stockSymbol, type, side, price, quantity, collateral, reduceOnly } = payload;
+
+	const { req, res, userId, stockSymbol, type, side, price, quantity } = payload;
+
+  const collateral = price * quantity;
 
 	/*
   ------ SECTION - 1 -----

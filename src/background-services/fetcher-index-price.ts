@@ -27,10 +27,10 @@ const recalculatePnL = () => {
     let PnL = 0;
 
     if(userMetaData.contract_quantity > 0){
-      PnL = (userMetaData.avg_price  - Math.trunc(INDEX_PRICE)) * Math.abs(userMetaData.contract_quantity)
+      PnL = (Math.trunc(INDEX_PRICE) - userMetaData.avg_price) * Math.abs(userMetaData.contract_quantity);
     }
     else if(userMetaData.contract_quantity < 0){
-      PnL = (Math.trunc(INDEX_PRICE) - userMetaData.avg_price) * Math.abs(userMetaData.contract_quantity);
+      PnL = (userMetaData.avg_price  - Math.trunc(INDEX_PRICE)) * Math.abs(userMetaData.contract_quantity);
     }
 		
 		updateContractStoreUserContractUnrealizedPnL(userId, "sol", PnL);

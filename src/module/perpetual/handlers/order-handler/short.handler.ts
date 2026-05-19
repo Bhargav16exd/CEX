@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { type OrderInputPayload } from "./long.handler.js";
 import { randomUUID } from "crypto";
 import { actionCreateShort, updateOrderOfMakershanldeContract} from "./utils.js";
-import { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
+import PERPETUAL_BALANCE_STORE, { readBalanceStoreUserLockedBalance, readBalanceStoreUserTotalBalance, updateBalanceStoreUserLockedBalance } from "../../memory/balances/perp-balances.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../../../utils/http.responses.js";
 import { OrderSide, OrderType } from "../../types/perp-types.js";
 import { createOrder, fetchFullFilledQuantityFromOrderId, PERPETUAL_ORDERBOOK_STORE, PERPETUAL_ORDERBOOK_STORE_INDEX, updateOrderFullFilledQuantity } from "../../memory/orderbook/prep-orderbook.js";
@@ -11,7 +11,9 @@ import { CONTRACT_STORE } from "../../memory/contracts/contracts-store.js";
 
 export const hanldeShortOrders = (payload: OrderInputPayload) => {
 
-	const { req, res, userId, stockSymbol, type, side, price, quantity, collateral, reduceOnly } = payload;
+	const { req, res, userId, stockSymbol, type, side, price, quantity } = payload;
+
+  const collateral = price * quantity;
 
   /*
   ------ SECTION - 1 -----
@@ -183,6 +185,10 @@ const handlePriceNotAvailableInLimitOrder = (req: Request, res: Response, userId
     console.log(key, CONTRACT_STORE[key]);
   }
 
+  console.log("BALANCE STORE")
+  for(const key in PERPETUAL_BALANCE_STORE){
+    console.log(key, PERPETUAL_BALANCE_STORE[key]);
+  }
 	return res.json(new HttpSuccessResponse(200, true, "Order Placed", PERPETUAL_ORDERBOOK_STORE[stockSymbol]));
 }
 

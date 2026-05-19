@@ -72,10 +72,10 @@ export const updateOrderOfMakershanldeContract = (userIds: Record<string,Array<s
 			}
 
       if(OrderSideInput == OrderSide.LONG){
-        hanldeContracts("sol", pos, order?.price!, takerId, userId, true);
+        hanldeContracts("sol", pos, order?.price!, takerId, userId);
       }
       else if(OrderSideInput == OrderSide.SHORT){
-        hanldeContracts("sol", pos, order?.price!, userId, takerId, true);
+        hanldeContracts("sol", pos, order?.price!, userId, takerId);
       }
       
 		})

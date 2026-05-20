@@ -1,10 +1,19 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
 }
 
+//remove url comment while applying migrations
+
 datasource db {
   provider = "postgresql"
+  //url      = env("DATABASE_URL")
 }
 
 model User {
@@ -13,15 +22,17 @@ model User {
   password String
   balance  Int    @default(0)
   orders   Order[]
+  deleted  Boolean @default(false)
 }
 
 model Stock {
   id      Int @id @default(autoincrement())
   title   String 
   symbol  String
-  Image   String
-  Market  String
+  imageurl   String
+  market  String
   orders  Order[]
+  deleted  Boolean @default(false)
 }
 
 model Order {
@@ -36,4 +47,5 @@ model Order {
   buyerUser      User @relation(fields: [userId], references: [id]) 
   stockId        Int
   stock          Stock @relation(fields: [stockId], references: [id])
+  deleted  Boolean @default(false)
 }

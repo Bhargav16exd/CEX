@@ -1,8 +1,9 @@
 import * as z from "zod";
 
 const createStockValidatorZod = z.object({
-  name:z.string(),
-  symbol:z.string()
+  title:z.string(),
+  symbol:z.string(),
+  market:z.string()
 })
 
 export {

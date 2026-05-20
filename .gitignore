@@ -3,3 +3,7 @@ node_modules
 dist
 /generated/prisma
 temp
+
+/generated/prisma
+
+/generated/prisma

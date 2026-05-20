@@ -12,6 +12,7 @@ import { connectRedis, pingRedis } from "./utils/engine-client.js";
 import { SERVER_INSTANCE_ID } from "./config.js";
 import { listenIndexPrices } from "./background-services/fetcher-index-price.js";
 import { listenPerpEngineResponses, listenSpotEngineResponses } from "./utils/enginer-responses-orchestrator.js";
+import { checkMinIOConnection } from "./utils/minio-client.js";
 
 dotenv.config();
 
@@ -59,8 +60,9 @@ app.listen(PORT, async () => {
   listenSpotEngineResponses();
   listenPerpEngineResponses();
   listenIndexPrices();
+  checkMinIOConnection();
 
   pingRedis().then((data)=>{
-    console.log(data)
+    console.log("Redis Connected")
   });
 });

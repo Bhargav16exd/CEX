@@ -1,6 +1,7 @@
 import type { Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../utils/http.responses.js"
 import { pushToQueue } from "../utils/engine-client.js";
+import { EngineType } from "../types/engine.js";
 
 
 // ------ Order Region Start -----
@@ -23,7 +24,7 @@ export const Order = async (req:Request, res:Response, next:any) => {
 			throw new HttpErrorResponse(400, false, "Invalid Inputs");
 		}
 
-		const queueResponse = await pushToQueue("create_order",req.body);
+		const queueResponse = await pushToQueue("create_order", req.body, EngineType.SPOT);
 
 		if(queueResponse.ok == false){
 			throw new HttpErrorResponse(400,false, queueResponse.error || "Internal Server Errror");

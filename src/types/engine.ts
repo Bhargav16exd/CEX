@@ -18,3 +18,8 @@ export interface EngineResponseType {
   data?: unknown;
   error?: string;
 }
+
+export enum EngineType {
+  "SPOT" = "SPOT",
+  "PERP" = "PERP"
+}

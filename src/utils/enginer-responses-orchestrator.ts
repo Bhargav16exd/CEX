@@ -1,6 +1,6 @@
 import { WebSocket } from "node:http";
 import type { EngineResponseType } from "../types/engine.js";
-import { ENGINE_RESPONSE_QUEUE, subscriber } from "./engine-client.js";
+import { PERP_ENGINE_RESPONSE_QUEUE, perpSubscriber, SPOT_ENGINE_RESPONSE_QUEUE, spotSubscriber } from "./engine-client.js";
 
 interface PendingResponse {
   resolve: (response: EngineResponseType) => void;
@@ -11,8 +11,8 @@ interface PendingResponse {
 const RESPONSE_CALLBACK_STORE = new Map<string,PendingResponse>();
 
 export const registerResponseCallBack = (
-    transactionId:string,
-    engineTimeout:number
+  transactionId:string,
+  engineTimeout:number
 ) : Promise<EngineResponseType> => {
 
 	return new Promise((resolve,reject)=>{
@@ -33,9 +33,23 @@ export const registerResponseCallBack = (
 	})
 }
 
-export const listenEngineResponses = async ():Promise<void> => {
+export const listenSpotEngineResponses = async ():Promise<void> => {
 	for(;;){
-		const response = await subscriber.brPop(ENGINE_RESPONSE_QUEUE,10);
+		const response = await spotSubscriber.brPop(SPOT_ENGINE_RESPONSE_QUEUE, 0);
+		if(!response) continue
+
+		try {
+			const parsedResponse = JSON.parse(response.element) as EngineResponseType;	
+			resolveEngineResponse(parsedResponse);
+		} catch (error) {
+			console.log(error)	
+		}
+	}
+}
+
+export const listenPerpEngineResponses = async ():Promise<void> => {
+	for(;;){
+		const response = await perpSubscriber.brPop(PERP_ENGINE_RESPONSE_QUEUE, 0);
 		if(!response) continue
 
 		try {
@@ -64,6 +78,6 @@ export const listenIndexPrices = async () => {
 	ws.onmessage = (event) => {
 	const data = JSON.parse(event.data);
 	console.log(data);
-	console.log("PRICE:", data.p);
+	console.log("PRICE:", data.p)
 	};
 } 

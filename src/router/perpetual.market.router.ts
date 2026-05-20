@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { Order } from "../controllers/perpetual.stock.controller.js";
+import { Order } from "../controllers/perp/perpetual.stock.controller.js";
+;
 
 const router = Router();
 

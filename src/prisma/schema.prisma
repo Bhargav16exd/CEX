@@ -19,6 +19,8 @@ model Stock {
   id      Int @id @default(autoincrement())
   title   String 
   symbol  String
+  Image   String
+  Market  String
   orders  Order[]
 }
 

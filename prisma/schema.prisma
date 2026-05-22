@@ -36,16 +36,49 @@ model Stock {
 }
 
 model Order {
-  id             Int @id @default(autoincrement())
+  id             String @id
+
   side           String
   type           String
+
   price          Int
   quantity       Int
   filledQuantity Int
-  Status         String 
+
+  status         String 
+
   userId         Int
   buyerUser      User @relation(fields: [userId], references: [id]) 
+
   stockId        Int
   stock          Stock @relation(fields: [stockId], references: [id])
-  deleted  Boolean @default(false)
+
+  deleted          Boolean  @default(false)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+  @@index([stockId])
+}
+
+model Fill {
+  id               Int      @id @default(autoincrement())
+
+  makerID          String
+  takerID          String
+
+  makerOrderID     String
+  takerOrderID     String
+
+  quantity         Int
+  market           String
+  price            Int
+
+  createdAt        DateTime @default(now())
+
+  @@index([makerOrderID])
+  @@index([takerOrderID])
+  @@index([market])
+  @@index([createdAt])
 }

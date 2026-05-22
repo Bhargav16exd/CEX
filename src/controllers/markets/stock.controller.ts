@@ -1,9 +1,11 @@
 import type { Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
-import { createStockValidatorZod } from "./zod-validations.js";
+import { createStockValidatorZod, depositBalanceValidatorZod } from "./zod-validations.js";
 import { uploadFileToBucket } from "../../utils/upload-files.js";
 import { BUCKET_NAME } from "../../constants/contants.js";
 import { prisma } from "../../db/prisma.client.js";
+import { EngineType } from "../../types/engine.js";
+import { pushToQueue } from "../../utils/engine-client.js";
 
 const createStock = async (req:Request, res:Response, next:any) => {
   try {
@@ -139,8 +141,44 @@ const deleteStock = async (req:Request, res:Response, next:any) => {
   }
 }
 
+const depositBalance = async(req:Request, res:Response, next:any) => {
+  try {
+    const {id , balance, marketType } = req.body
+
+    if(!id || !balance || !marketType){
+      throw new HttpErrorResponse(400, false, "Invalid Inputs");
+    }
+
+    const isValidated = depositBalanceValidatorZod.safeParse({
+      id,
+      balance,
+      marketType
+    })
+
+    if(!isValidated){
+      throw new HttpErrorResponse(400, false, "Invalid Input Format");
+    }
+
+    let queueRes = null
+
+    if(marketType == EngineType.SPOT){
+      queueRes = await pushToQueue("update_balance", req.body, EngineType.SPOT);
+    }
+
+    if(marketType == EngineType.PERP){
+      queueRes = await pushToQueue("update_balance", req.body, EngineType.PERP);
+    }
+
+    return res.json(new HttpSuccessResponse(200, true, "Amount Deposited",queueRes?.data!));
+    
+  } catch (error) {
+    next(error)
+  }
+}
+
 export {
   createStock,
   updateStock,
-  deleteStock
+  deleteStock,
+  depositBalance
 }

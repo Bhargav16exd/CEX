@@ -6,6 +6,13 @@ const createStockValidatorZod = z.object({
   market:z.string()
 })
 
+const depositBalanceValidatorZod = z.object({
+  id:z.string(),
+  balance:z.number(),
+  marketType:z.string()
+})
+
 export {
-  createStockValidatorZod
+  createStockValidatorZod,
+  depositBalanceValidatorZod
 }

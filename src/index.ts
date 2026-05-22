@@ -8,6 +8,7 @@ import userRouter from "./router/user.router.js"
 import spotMarketRouter from "./router/spot.market.router.js"
 import perpetualMarketRouter from "../src/router/perpetual.market.router.js"
 import marketRouter from "./router/market.router.js"
+import tradesRouter from "./router/trade.router.js"
 import { connectRedis, pingRedis } from "./utils/engine-client.js";
 import { SERVER_INSTANCE_ID } from "./config.js";
 import { listenIndexPrices } from "./background-services/fetcher-index-price.js";
@@ -34,6 +35,7 @@ app.use("/api/user", userRouter);
 app.use("/api/stock/spot", spotMarketRouter);
 app.use("/api/stock/perpetual", perpetualMarketRouter);
 app.use("/api/market", marketRouter);
+app.use("/api/trades", tradesRouter);
 
 // Error Handler
 app.use((

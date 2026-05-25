@@ -58,7 +58,9 @@ const createStock = async (req:Request, res:Response, next:any) => {
       throw new HttpErrorResponse(500, false, "Internal Server Error");
     }
 
-    return new HttpSuccessResponse(201, true, "Stock Created", stock);
+    return res
+    .status(201)
+    .json(new HttpSuccessResponse(201, true, "Stock Created", stock));
 
   } catch (error) {
     console.log(error)

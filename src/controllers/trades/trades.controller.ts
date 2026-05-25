@@ -13,8 +13,7 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
       }
     })
 
-    console.log(isUserExist)
-
+    
     if(!isUserExist){
       throw new HttpErrorResponse(400, false, "Invalid User ID");
     }
@@ -35,7 +34,40 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
     return res.json(new HttpSuccessResponse(200, true, "Fills", fills));
 
   } catch (error) {
-    console.log(error)
     next(error) 
+  }
+}
+
+export const orders = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+    
+    const { marketId } = req.params
+
+    if(!marketId){
+      throw new HttpErrorResponse(400, false, "Empty Market Id");
+    }
+
+    const market = await prisma.stock.findUnique({
+      where:{
+        id:Number(marketId)
+      }
+    })
+
+    if(!market){
+      throw new HttpErrorResponse(400, false, "Invalid Market Id");
+    }
+
+    const order = await prisma.order.findMany({
+      where:{
+        stockSymbol:market.symbol
+      }
+    }) || []
+
+    return res
+    .status(200)
+    .json(new HttpSuccessResponse(200, true, "Orders Fetched", order));
+
+  } catch (error) {
+    next(error)
   }
 }

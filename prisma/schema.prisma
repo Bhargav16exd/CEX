@@ -21,7 +21,7 @@ model User {
   username String @unique
   password String
   balance  Int    @default(0)
-  orders   Order[]
+  //orders   Order[]
   deleted  Boolean @default(false)
 }
 
@@ -31,12 +31,11 @@ model Stock {
   symbol  String
   imageurl   String
   market  String
-  orders  Order[]
   deleted  Boolean @default(false)
 }
 
 model Order {
-  id             String @id
+  orderId        String @id
 
   side           String
   type           String
@@ -47,19 +46,15 @@ model Order {
 
   status         String 
 
-  userId         Int
-  buyerUser      User @relation(fields: [userId], references: [id]) 
+  userId         String
+ // user      User @relation(fields: [userId], references: [id]) 
 
-  stockId        Int
-  stock          Stock @relation(fields: [stockId], references: [id])
+  stockSymbol     String
 
   deleted          Boolean  @default(false)
 
   createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
   @@index([userId])
-  @@index([stockId])
 }
 
 model Fill {

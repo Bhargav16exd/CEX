@@ -24,6 +24,27 @@ export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 	}
 }
 
+export const deleteOrder = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+    const {userId , orderId} = req.body;
+    
+    if(!userId || !orderId){
+      throw new HttpErrorResponse(400, false, "Invalid Inputs");
+    }
+
+    const queueResponse = await pushToQueue("cancel_order", req.body, EngineType.PERP);
+      
+    if(queueResponse.ok == false){
+      throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
+    }
+    
+    return res.json(new HttpSuccessResponse(204, true, "Order Canceled",queueResponse.data!));
+
+  } catch (error) {
+    next(error)
+  }
+}
+
 
 export const openContracts = async (req:Request, res:Response, next:NextFunction) => {
   try {

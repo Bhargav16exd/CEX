@@ -77,3 +77,16 @@ model Fill {
   @@index([market])
   @@index([createdAt])
 }
+
+model Contracts {
+  id                String @id @default(uuid())
+  contract_quantity Int
+  avg_price         Int
+  collateral        Int
+  realizedProfit    Int
+  realizedLoss      Int
+  stockSymbol       String
+  userId            String
+}
+
+//ROLE - MAKER | TAKER

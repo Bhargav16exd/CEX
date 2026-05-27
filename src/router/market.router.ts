@@ -6,7 +6,8 @@ import { authenticationMiddleware } from "../middleware/auth.middleware.js";
 const router = Router();
 
 router.route('/stock').post(authenticationMiddleware, createStock);
-router.route('/stocks').get(authenticationMiddleware, readStocks);
+
+router.route('/stocks/:market').get(readStocks);
 router.route('/stock').patch(upload.single('file'), updateStock);
 router.route('/stock').delete(deleteStock);
 

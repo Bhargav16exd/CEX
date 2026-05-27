@@ -9,8 +9,8 @@ import { pushToQueue } from "../../utils/engine-client.js";
 import { tr } from "zod/locales";
 
 enum MarketType {
-  SPOT = "SPOT",
-  PERPETUAL = "PERPETUAL"
+  SPOT = "spot",
+  PERPETUAL = "perp"
 }
 
 const createStock = async (req:Request, res:Response, next:any) => {
@@ -100,6 +100,9 @@ const readStocks = async (req:Request, res:Response, next:any) => {
     const stocks = await prisma.stock.findMany({
       where:{
         market
+      },
+      select:{
+        title:true
       }
     }) || []
 

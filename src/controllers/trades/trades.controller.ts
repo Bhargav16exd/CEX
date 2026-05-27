@@ -2,18 +2,20 @@ import type { NextFunction, Request, Response } from "express";
 import { prisma } from "../../db/prisma.client.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 
-
-export const fills = async (req:Request, res:Response, next:NextFunction) => {
+/*
+  FETCH ALL FILLS FOR ALL FILLS HISTORY
+*/
+export const allFills = async (req:Request, res:Response, next:NextFunction) => {
   try { 
-    let {id} = req.body
+    //@ts-ignore
+    let id = req.id 
 
     const isUserExist = await prisma.user.findUnique({
       where:{
-        id
+        id:Number(id)
       }
     })
 
-    
     if(!isUserExist){
       throw new HttpErrorResponse(400, false, "Invalid User ID");
     }
@@ -30,11 +32,34 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
       }
     })
 
-
     return res.json(new HttpSuccessResponse(200, true, "Fills", fills));
 
   } catch (error) {
+    console.log(error)
     next(error) 
+  }
+}
+
+/*
+  FETCH ALL ORDERS FOR ALL ORDER HISTORY ACROSS ANY MARKET
+*/
+export const allOrders = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+    //@ts-ignore
+    let id = req.id 
+
+    const order = await prisma.order.findMany({
+      where:{
+        userId:id
+      }
+    }) || []
+
+    return res
+    .status(200)
+    .json(new HttpSuccessResponse(200, true, "Orders Fetched", order));
+
+  } catch (error) {
+    next(error)
   }
 }
 

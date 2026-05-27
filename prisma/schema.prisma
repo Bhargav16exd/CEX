@@ -29,7 +29,6 @@ model Stock {
   id      Int @id @default(autoincrement())
   title   String 
   symbol  String
-  imageurl   String
   market  String
   deleted  Boolean @default(false)
 }

@@ -8,7 +8,7 @@ import { EngineType } from "../../types/engine.js";
 import { pushToQueue } from "../../utils/engine-client.js";
 import { tr } from "zod/locales";
 
-enum MarketType {
+export enum MarketType {
   SPOT = "spot",
   PERPETUAL = "perp"
 }
@@ -102,7 +102,8 @@ const readStocks = async (req:Request, res:Response, next:any) => {
         market
       },
       select:{
-        title:true
+        title:true,
+        symbol:true
       }
     }) || []
 

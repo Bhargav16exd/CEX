@@ -1,10 +1,13 @@
-import type { Request, Response } from "express"
+import type { NextFunction, Request, Response } from "express"
 import bcrypt from "bcrypt"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { prisma } from "../../db/prisma.client.js";
 import jwt from "jsonwebtoken"
 
 import { signupValidatorZod } from "../user/zod-validations.js"
+import { MarketType } from "../markets/stock.controller.js";
+import { pushToQueue } from "../../utils/engine-client.js";
+import { EngineType } from "../../types/engine.js";
 
 const SALT_ROUNDS = 10 
 
@@ -142,8 +145,49 @@ const addBalance = async (req: Request, res:Response) => {
 	}
 }
 
+const readBalance = async (req:any, res:Response, next:NextFunction) => {
+  try {
+
+    const { market } = req.params
+
+    if(!market){
+      throw new HttpErrorResponse(400, false, "Invalid Inputs");
+    }
+
+    if(market != MarketType.SPOT && market != MarketType.PERPETUAL){
+      throw new HttpErrorResponse(400, false, "Invalid Market Type");
+    }
+
+    let queueResponse;
+
+    if(market === MarketType.PERPETUAL){
+      queueResponse = await pushToQueue("get_user_balance",{
+        userId:req?.id
+      }, EngineType.PERP);
+    }
+
+    if(market === MarketType.SPOT){
+      queueResponse = await pushToQueue("get_user_balance",{
+        userId:req?.id
+      }, EngineType.SPOT);
+    }
+
+    if(queueResponse!.ok == false){
+      throw new HttpErrorResponse(400, false, queueResponse!.error || "Internal Server Error");
+    }
+
+    return res
+    .status(200)
+    .json(new HttpSuccessResponse(200, true, "Balance", {balance:queueResponse!.data}))
+
+  } catch (error) {
+    next(error)
+  }
+}
+
 export {
 	signup,
   signin,
-	addBalance
+	addBalance,
+  readBalance
 }

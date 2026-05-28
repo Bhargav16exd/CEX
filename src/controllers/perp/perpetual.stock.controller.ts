@@ -4,7 +4,6 @@ import { pushToQueue } from "../../utils/engine-client.js";
 import { EngineType } from "../../types/engine.js";
 import { prisma } from "../../db/prisma.client.js";
 
-
 export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 	try {
     //@ts-ignore
@@ -46,7 +45,6 @@ export const deleteOrder = async (req:Request, res:Response, next:NextFunction) 
     next(error)
   }
 }
-
 
 export const openContracts = async (req:Request, res:Response, next:NextFunction) => {
   try {
@@ -111,5 +109,95 @@ export const closedContracts = async (req:Request, res:Response, next:NextFuncti
 
   } catch (error) {
     next(error)
+  }
+}
+
+export const depth = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+    const { stockSymbol } = req.params
+
+    if(!stockSymbol){
+      throw new HttpErrorResponse(400, false, "Invalid Params");
+    }
+
+    const symbol:any= stockSymbol
+
+    const isStockExist = await prisma.stock.findFirst({
+      where:{
+        market:"perp",
+        symbol
+      }
+    })
+
+    if(!isStockExist){
+      throw new HttpErrorResponse(400, false, "Invalid Params");
+    }
+
+    const queueResponse = await pushToQueue("get_depth", {stockSymbol}, EngineType.PERP);
+
+    if(queueResponse.ok == false){
+      throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
+    }
+
+    //@ts-ignore
+    const orderbook = queueResponse.data.orderbook
+    //@ts-ignore
+    const orderbookIndex = queueResponse.data.orderbookIndex
+
+    const returnPayload = depthHelper(orderbook, orderbookIndex);
+    
+    return res
+    .status(200)
+    .json(new HttpSuccessResponse(200, true, "Success", returnPayload));
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+interface StockSpecificOrderbookIndexStoreType {
+  short:number[],
+  long:number[]
+}
+
+interface StockSpecificOrderbookStoreType {
+  short:ShortType,
+  long:LongType
+}
+
+interface ShortType {
+  [price :string]:TransactionEntityType
+}
+
+interface LongType {
+  [price :string]:TransactionEntityType
+}
+
+interface TransactionEntityType {
+  totalQuantity:number;
+  remainingQuantity:number;
+}
+
+const depthHelper = (orderbook:StockSpecificOrderbookStoreType, orderbookIndex:StockSpecificOrderbookIndexStoreType) => {
+  const bids :any= []
+  const asks :any= [];
+
+  orderbookIndex.long.forEach((price)=>{
+    const item = [] as any;
+    item.push(price);
+    item.push(orderbook.long[`${price}`]?.remainingQuantity)
+    bids.unshift(item)
+  })
+
+  orderbookIndex.short.forEach((price)=>{
+    const item = [] as any;
+    item.push(price);
+    item.push(orderbook.short[`${price}`]?.remainingQuantity)
+    asks.push(item)
+  })
+
+  return {
+    bids,
+    asks
   }
 }

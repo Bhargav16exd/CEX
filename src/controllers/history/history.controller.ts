@@ -9,7 +9,8 @@ import { MarketType } from "../markets/stock.controller.js";
 export const allFills = async (req:Request, res:Response, next:NextFunction) => {
   try { 
     //@ts-ignore
-    let id = req.id 
+    let id = req.id
+    const {count, offset} = req.query; 
 
     const isUserExist = await prisma.user.findUnique({
       where:{
@@ -24,7 +25,8 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
     id = id.toString()
 
     const fills = await prisma.fill.findMany({
-      take:10,
+      skip:Number(offset) ?? 0,
+      take:Number(count) ?? 10,
       where:{
         OR:[
           {makerID:id},
@@ -36,7 +38,6 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
     return res.json(new HttpSuccessResponse(200, true, "Fills", fills));
 
   } catch (error) {
-    console.log(error)
     next(error) 
   }
 }
@@ -47,9 +48,12 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
 export const allOrders = async (req:Request, res:Response, next:NextFunction) => {
   try {
     //@ts-ignore
-    let id = req.id 
+    let id = req.id ;
+    const {count, offset} = req.query;
 
     const order = await prisma.order.findMany({
+      skip:Number(offset) ?? 0,
+      take:Number(count) ?? 10,
       where:{
         userId:id
       }
@@ -72,6 +76,8 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
     //@ts-ignore
     let id = req.id 
     const { symbol, market } = req.params; 
+    const {count, offset} = req.query
+
 
     if(!symbol || Array.isArray(symbol) || !market || Array.isArray(market)){
       throw new HttpErrorResponse(400, false, "Invalid Req Params");
@@ -94,7 +100,8 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
     id = id.toString()
 
     const fills = await prisma.fill.findMany({
-      take:10,
+      skip:Number(offset) ?? 0,
+      take:Number(count) ?? 10,
       where:{
         market,
         symbol,
@@ -121,6 +128,7 @@ export const orders = async (req:Request, res:Response, next:NextFunction) => {
     //@ts-ignore
     let id = req.id 
     const { symbol, market } = req.params; 
+    const {count, offset} = req.query;
 
     if(!symbol || Array.isArray(symbol) || !market || Array.isArray(market)){
       throw new HttpErrorResponse(400, false, "Invalid Req Params");
@@ -141,14 +149,14 @@ export const orders = async (req:Request, res:Response, next:NextFunction) => {
     }
 
     const order = await prisma.order.findMany({
+      skip:Number(offset) ?? 0,
+      take:Number(count) ?? 10,
       where:{
         symbol,
         market,
         userId:id
       }
     }) || []
-
-    console.log("here 2")
 
     return res
     .status(200)

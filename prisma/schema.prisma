@@ -1,79 +1,60 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
 }
 
-//remove url comment while applying migrations
-
 datasource db {
   provider = "postgresql"
-  //url      = env("DATABASE_URL")
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  username String @unique
+  id       Int     @id @default(autoincrement())
+  username String  @unique
   password String
-  balance  Int    @default(0)
-  //orders   Order[]
+  balance  Int     @default(0)
   deleted  Boolean @default(false)
 }
 
 model Stock {
-  id      Int @id @default(autoincrement())
-  title   String 
+  id      Int     @id @default(autoincrement())
+  title   String
   symbol  String
   market  String
-  deleted  Boolean @default(false)
+  deleted Boolean @default(false)
 }
 
 model Order {
-  orderId        String @id
-
   side           String
   type           String
-
   price          Int
   quantity       Int
   filledQuantity Int
-
-  status         String 
-
+  status         String
   userId         String
- // user      User @relation(fields: [userId], references: [id]) 
+  deleted        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  orderId        String   @id
+  symbol         String
+  market         String
 
-  stockSymbol     String
-
-  deleted          Boolean  @default(false)
-
-  createdAt        DateTime @default(now())
   @@index([userId])
 }
 
 model Fill {
-  id               Int      @id @default(autoincrement())
-
-  makerID          String
-  takerID          String
-
-  makerOrderID     String
-  takerOrderID     String
-
-  quantity         Int
-  market           String
-  price            Int
-
-  createdAt        DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  makerID      String
+  takerID      String
+  makerOrderID String
+  takerOrderID String
+  quantity     Int
+  symbol       String
+  market       String
+  price        Int
+  createdAt    DateTime @default(now())
 
   @@index([makerOrderID])
   @@index([takerOrderID])
-  @@index([market])
+  @@index([symbol], map: "Fill_market_idx")
   @@index([createdAt])
 }
 
@@ -87,5 +68,3 @@ model Contracts {
   stockSymbol       String
   userId            String
 }
-
-//ROLE - MAKER | TAKER

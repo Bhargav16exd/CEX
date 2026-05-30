@@ -7,8 +7,10 @@ import { prisma } from "../../db/prisma.client.js";
 export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 	try {
     //@ts-ignore
-    const userId = req?.id
-		const {stockSymbol, type, side, price, quantity, collateral, reduceOnly} = req.body;
+    // const userId = req?.id
+		// const {stockSymbol, type, side, price, quantity, collateral, reduceOnly} = req.body;
+
+    const {userId, stockSymbol, type, side, price, quantity, collateral, reduceOnly} = req.body;
 		
 		if(!userId || !stockSymbol || !type || !side || !price || !quantity){
 			throw new HttpErrorResponse(400, false, "Invalid Inputs");
@@ -148,7 +150,7 @@ export const depth = async (req:Request, res:Response, next:NextFunction) => {
     
     return res
     .status(200)
-    .json(new HttpSuccessResponse(200, true, "Success", returnPayload));
+    .json(new HttpSuccessResponse(200, true, "Success", { ...returnPayload, updateId:orderbook.updateId}));
 
   } catch (error) {
     next(error)

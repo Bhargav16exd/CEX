@@ -6,7 +6,6 @@ import { BUCKET_NAME } from "../../constants/contants.js";
 import { prisma } from "../../db/prisma.client.js";
 import { EngineType } from "../../types/engine.js";
 import { pushToQueue } from "../../utils/engine-client.js";
-import { tr } from "zod/locales";
 
 export enum MarketType {
   SPOT = "spot",

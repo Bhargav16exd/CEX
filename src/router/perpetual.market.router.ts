@@ -5,7 +5,8 @@ import { authenticationMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.route("/order").post(authenticationMiddleware, Order);
+//router.route("/order").post(authenticationMiddleware, Order);
+router.route("/order").post(Order);
 router.route("/order").delete(deleteOrder);
 
 router.route("/contracts/open/:marketId/:userId").get(openContracts);

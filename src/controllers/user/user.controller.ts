@@ -18,7 +18,7 @@ const generateSignedToken = (id:string):string=> {
     },
     JWT_SECRET_KEY,
     {
-      expiresIn: '1h'
+      expiresIn: '1d'
     }
   )
   return token

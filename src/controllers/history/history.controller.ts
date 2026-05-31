@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { prisma } from "../../db/prisma.client.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { MarketType } from "../markets/stock.controller.js";
-import { symbol } from "zod";
+
 
 /*
   FETCH ALL FILLS FOR ALL FILLS HISTORY
@@ -12,15 +12,14 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
     //@ts-ignore
     let id = req.id
     const {count, offset} = req.query; 
+    const {market} = req.params
 
-    const isUserExist = await prisma.user.findUnique({
-      where:{
-        id:Number(id)
-      }
-    })
+    if(!market || Array.isArray(market)){
+      throw new HttpErrorResponse(400, false, "Invalid Req Params");
+    }
 
-    if(!isUserExist){
-      throw new HttpErrorResponse(400, false, "Invalid User ID");
+    if(market != MarketType.SPOT  && market != MarketType.PERPETUAL){
+      throw new HttpErrorResponse(400, false, "Invalid Market Type");
     }
 
     id = id.toString()
@@ -32,7 +31,8 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
         OR:[
           {makerID:id},
           {takerID:id}
-        ]
+        ],
+        market
       }
     })
 
@@ -52,11 +52,22 @@ export const allOrders = async (req:Request, res:Response, next:NextFunction) =>
     let id = req.id ;
     const {count, offset} = req.query;
 
+    const {market} = req.params
+
+    if(!market || Array.isArray(market)){
+      throw new HttpErrorResponse(400, false, "Invalid Req Params");
+    }
+
+    if(market != MarketType.SPOT  && market != MarketType.PERPETUAL){
+      throw new HttpErrorResponse(400, false, "Invalid Market Type");
+    }
+
     const order = await prisma.order.findMany({
       skip:Number(offset) ?? 0,
       take:Number(count) ?? 10,
       where:{
-        userId:id
+        userId:id,
+        market
       },
       select:{
         symbol:true,

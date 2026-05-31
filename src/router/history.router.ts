@@ -5,8 +5,8 @@ import { allFills, allOrders, fills, orders } from "../controllers/history/histo
 
 const router = Router();
 
-router.route("/fills").get(authenticationMiddleware, allFills);
-router.route("/orders").get(authenticationMiddleware, allOrders);
+router.route("/fills/:market").get(authenticationMiddleware, allFills);
+router.route("/orders/:market").get(authenticationMiddleware, allOrders);
 
 router.route("/fills/:market/:symbol").get(authenticationMiddleware, fills);
 router.route("/orders/:market/:symbol").get(authenticationMiddleware, orders);

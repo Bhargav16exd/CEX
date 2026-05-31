@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { prisma } from "../../db/prisma.client.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { MarketType } from "../markets/stock.controller.js";
+import { symbol } from "zod";
 
 /*
   FETCH ALL FILLS FOR ALL FILLS HISTORY
@@ -35,7 +36,7 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
       }
     })
 
-    return res.json(new HttpSuccessResponse(200, true, "Fills", fills));
+    return res.json(new HttpSuccessResponse(200, true, "Fills", buildFillsPayload(fills, id)));
 
   } catch (error) {
     next(error) 
@@ -56,6 +57,15 @@ export const allOrders = async (req:Request, res:Response, next:NextFunction) =>
       take:Number(count) ?? 10,
       where:{
         userId:id
+      },
+      select:{
+        symbol:true,
+        side:true,
+        type:true,
+        price:true,
+        quantity:true,
+        status:true,
+        createdAt:true
       }
     }) || []
 
@@ -112,7 +122,7 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
       }
     })
 
-    return res.json(new HttpSuccessResponse(200, true, "Fills", fills));
+    return res.json(new HttpSuccessResponse(200, true, "Fills", buildFillsPayload(fills, id)));
 
   } catch (error) {
     console.log(error)
@@ -155,6 +165,15 @@ export const orders = async (req:Request, res:Response, next:NextFunction) => {
         symbol,
         market,
         userId:id
+      },
+      select:{
+        symbol:true,
+        side:true,
+        type:true,
+        price:true,
+        quantity:true,
+        status:true,
+        createdAt:true
       }
     }) || []
 
@@ -164,5 +183,52 @@ export const orders = async (req:Request, res:Response, next:NextFunction) => {
 
   } catch (error) {
     next(error)
+  }
+}
+
+type Fills = {
+  takerID: string;
+  makerOrderID: string;
+  makerID: string;
+  takerOrderID: string;
+  quantity: number;
+  symbol:string;
+  market: string;
+  price:number;
+  makerSide:string;
+  takerSide:string;
+  createdAt:Date;
+}
+
+export const buildFillsPayload = (fills:Array<Fills>, userId:string) =>{
+  const trimmedPayload = fills.map((fill)=>{
+    const {role, side} = getUserSideAndRole(fill, userId);
+    return {
+      symbol:fill.symbol,
+      side,
+      price:fill.price,
+      quantity:fill.quantity,
+      role,
+      createdAt:fill.createdAt
+    }
+  })
+  return trimmedPayload
+}
+
+const getUserSideAndRole = (fill:Fills, userId:string) =>{
+  let role = "";
+  let side = "";
+  
+  if(Number(fill.makerID) === Number(userId)){
+    role = "Maker" 
+    side = fill.makerSide 
+  }
+  else if(Number(fill.takerID) === Number(userId)){
+    role = "Taker"
+    side = fill.takerSide
+  }
+
+  return {
+    role,side
   }
 }

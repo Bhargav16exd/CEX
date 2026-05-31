@@ -36,12 +36,13 @@ model Order {
   orderId        String   @id
   symbol         String
   market         String
-
   @@index([userId])
 }
 
 model Fill {
   id           Int      @id @default(autoincrement())
+  makerSide    String
+  takerSide    String
   makerID      String
   takerID      String
   makerOrderID String

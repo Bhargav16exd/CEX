@@ -4,6 +4,11 @@ import { pushToQueue } from "../../utils/engine-client.js";
 import { EngineType } from "../../types/engine.js";
 import { prisma } from "../../db/prisma.client.js";
 
+/*
+  ------- ORDERS SECTION --------
+  ----------------------------------
+*/
+
 export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 	try {
     //@ts-ignore
@@ -48,25 +53,40 @@ export const deleteOrder = async (req:Request, res:Response, next:NextFunction) 
   }
 }
 
+export const OpenOrders = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+    //@ts-ignore
+    const id = req.id;
+    const {symbol} = req.params
+
+    const queueResponse = await pushToQueue("get_open_order", {id, symbol}, EngineType.PERP);
+      
+    if(queueResponse.ok == false){
+      throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
+    }
+    
+    return res.json(new HttpSuccessResponse(200, true, "Open Orders",queueResponse.data!));
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+
+/*
+  ------- CONTRACTS SECTION --------
+  ----------------------------------
+*/
+
 export const openContracts = async (req:Request, res:Response, next:NextFunction) => {
   try {
-    const { marketId, userId } = req.params
+    const { symbol, userId } = req.params
 
-    if(!marketId || !userId){ 
+    if(!symbol || !userId){ 
       throw new HttpErrorResponse(400, false, "Empty Market Id");
     }
 
-    const market = await prisma.stock.findUnique({
-      where:{
-        id:Number(marketId)
-      }
-    })
-
-    if(!market){
-      throw new HttpErrorResponse(400, false, "Invalid Market Id");
-    }
-
-    const payload = { stockSymbol:market.symbol, userId }
+    const payload = { stockSymbol:symbol, userId }
     const queueResponse = await pushToQueue("get_open_contract", payload, EngineType.PERP);
 
     if(queueResponse.ok == false){
@@ -82,26 +102,16 @@ export const openContracts = async (req:Request, res:Response, next:NextFunction
 export const closedContracts = async (req:Request, res:Response, next:NextFunction) => {
   try {
     
-    const { marketId, userId } = req.params
+    const { symbol, userId } = req.params
 
-    if(!marketId || !userId){ 
+    if(!symbol || !userId){ 
       throw new HttpErrorResponse(400, false, "Empty Market Id");
-    }
-
-    const market = await prisma.stock.findUnique({
-      where:{
-        id:Number(marketId)
-      }
-    })
-
-    if(!market){
-      throw new HttpErrorResponse(400, false, "Invalid Market Id");
     }
 
     const contracts = await prisma.contracts.findMany({
       where:{
         userId:userId.toString(),
-        stockSymbol:market.symbol
+        symbol
       }
     }) || []
 

@@ -1,6 +1,7 @@
 import type { NextFunction } from "express";
 import { HttpErrorResponse } from "../utils/http.responses.js";
 import jwt from "jsonwebtoken"
+import { prisma } from "../db/prisma.client.js";
 
 export const authenticationMiddleware = async (req:any, _:any, next:NextFunction) => {
   try {
@@ -22,13 +23,45 @@ export const authenticationMiddleware = async (req:any, _:any, next:NextFunction
       throw new HttpErrorResponse(500, false, "Internal Server Error")
     }
     
-    req.id = id;
+    const user = await prisma.user.findFirst({
+      where:{
+        id:Number(id)
+      }
+    })
 
-    next()
+    if(!user){
+      throw new HttpErrorResponse(500, false, "Invalid User Id")
+    }
+
+    req.id = id;
+    req.role = user.role;
+
+    next();
   } catch (error:any) {
     if(error?.name == "TokenExpiredError"){
       throw new HttpErrorResponse(403, false, "Token Expired");
     }
     throw new HttpErrorResponse(500, false, error.message);
+  }
+}
+
+export const isAdminRoute = (req:any,_:any,next:NextFunction) => {
+  try {
+    const role = req.role
+    if(!role){
+      throw new HttpErrorResponse(500, false, "Internal Server Error");
+    }
+
+    if(role != "admin"){
+      throw new HttpErrorResponse(403, false, "Not Enough Permissions");
+    }
+    
+    next();
+    
+  } catch (error:any) {
+     if(error?.message == "Not Enough Permissions"){
+      throw new HttpErrorResponse(403, false, "Not Enough Permissions");
+    }
+    throw new HttpErrorResponse(500, false, "Internal Server Error");
   }
 }

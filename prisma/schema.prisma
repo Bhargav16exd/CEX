@@ -13,6 +13,7 @@ model User {
   password String
   balance  Int     @default(0)
   deleted  Boolean @default(false)
+  role     String  @default("client")
 }
 
 model Stock {

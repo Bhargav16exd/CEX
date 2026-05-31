@@ -110,7 +110,8 @@ const signin = async (req:Request, res:Response, next:any) => {
     const token = generateSignedToken(user.id.toString());
 
 	  res.json(new HttpSuccessResponse(201, true, "User Onboarded",{
-      token
+      token,
+      role:user.role
     }));
 
 	} catch (error) {

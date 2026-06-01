@@ -5,9 +5,8 @@ import { prisma } from "../../db/prisma.client.js";
 import jwt from "jsonwebtoken"
 
 import { signupValidatorZod } from "../user/zod-validations.js"
-import { MarketType } from "../markets/stock.controller.js";
 import { pushToQueue } from "../../utils/engine-client.js";
-import { EngineType } from "../../types/engine.js";
+import { MarketType } from "@cex/shared";
 
 const SALT_ROUNDS = 10 
 
@@ -155,22 +154,22 @@ const readBalance = async (req:any, res:Response, next:NextFunction) => {
       throw new HttpErrorResponse(400, false, "Invalid Inputs");
     }
 
-    if(market != MarketType.SPOT && market != MarketType.PERPETUAL){
+    if(market != MarketType.spot && market != MarketType.perp){
       throw new HttpErrorResponse(400, false, "Invalid Market Type");
     }
 
     let queueResponse;
 
-    if(market === MarketType.PERPETUAL){
+    if(market === MarketType.perp){
       queueResponse = await pushToQueue("get_user_balance",{
         userId:req?.id
-      }, EngineType.PERP);
+      }, MarketType.perp);
     }
 
-    if(market === MarketType.SPOT){
+    if(market === MarketType.spot){
       queueResponse = await pushToQueue("get_user_balance",{
         userId:req?.id
-      }, EngineType.SPOT);
+      }, MarketType.spot);
     }
 
     if(queueResponse!.ok == false){

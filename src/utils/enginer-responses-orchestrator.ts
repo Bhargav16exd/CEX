@@ -1,6 +1,7 @@
 import { WebSocket } from "node:http";
-import type { EngineResponseType } from "../types/engine.js";
+
 import { PERP_ENGINE_RESPONSE_QUEUE, perpSubscriber, SPOT_ENGINE_RESPONSE_QUEUE, spotSubscriber } from "./engine-client.js";
+import type { EngineResponseType } from "@cex/shared";
 
 interface PendingResponse {
   resolve: (response: EngineResponseType) => void;

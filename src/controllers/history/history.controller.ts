@@ -1,8 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { prisma } from "../../db/prisma.client.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
-import { MarketType } from "../markets/stock.controller.js";
-
+import { MarketType } from "@cex/shared";
 
 /*
   FETCH ALL FILLS FOR ALL FILLS HISTORY
@@ -18,7 +17,7 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
       throw new HttpErrorResponse(400, false, "Invalid Req Params");
     }
 
-    if(market != MarketType.SPOT  && market != MarketType.PERPETUAL){
+    if(market != MarketType.spot  && market != MarketType.perp){
       throw new HttpErrorResponse(400, false, "Invalid Market Type");
     }
 
@@ -58,7 +57,7 @@ export const allOrders = async (req:Request, res:Response, next:NextFunction) =>
       throw new HttpErrorResponse(400, false, "Invalid Req Params");
     }
 
-    if(market != MarketType.SPOT  && market != MarketType.PERPETUAL){
+    if(market != MarketType.spot  && market != MarketType.perp){
       throw new HttpErrorResponse(400, false, "Invalid Market Type");
     }
 
@@ -104,7 +103,7 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
       throw new HttpErrorResponse(400, false, "Invalid Req Params");
     }
 
-    if(market != MarketType.SPOT  && market != MarketType.PERPETUAL){
+    if(market != MarketType.spot  && market != MarketType.perp){
       throw new HttpErrorResponse(400, false, "Invalid Market Type");
     }
 
@@ -155,7 +154,7 @@ export const orders = async (req:Request, res:Response, next:NextFunction) => {
       throw new HttpErrorResponse(400, false, "Invalid Req Params");
     }
 
-    if(market != MarketType.SPOT  && market != MarketType.PERPETUAL){
+    if(market != MarketType.spot  && market != MarketType.perp){
       throw new HttpErrorResponse(400, false, "Invalid Market Type");
     }
 

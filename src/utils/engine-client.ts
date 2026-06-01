@@ -1,5 +1,6 @@
 import { createClient } from "redis";
-import { EngineType, type EngineCommandType, type EngineRequestType } from "../types/engine.js";
+import { EngineType, MarketType, type EngineCommandType, type EngineRequestType } from "@cex/shared";
+
 import { randomUUID } from "crypto";
 import { registerResponseCallBack } from "./enginer-responses-orchestrator.js";
 import { SERVER_INSTANCE_ID } from "../config.js";
@@ -35,7 +36,7 @@ export const PERP_ENGINE_RESPONSE_QUEUE = `perp-engine-response-queue-${SERVER_I
 export const pushToQueue = async (
   type : EngineCommandType,
   payload: Record<string,any>,
-  engineType: EngineType
+  engineType: MarketType  
 ) => {
 
   /*
@@ -64,20 +65,20 @@ export const pushToQueue = async (
 };
 
 
-const fetchEngineRequestQueueType  = (type:EngineType) => {
-  if(type == EngineType.SPOT){
+const fetchEngineRequestQueueType  = (type:MarketType) => {
+  if(type == MarketType.spot){
     return SPOT_ENGINE_REQUEST_QUEUE
   }
-  else if(type == EngineType.PERP){
+  else if(type == MarketType.perp ){
     return PERP_ENGINE_REQUEST_QUEUE
   }
 }
 
-const fetchEngineResponseQueueType  = (type:EngineType) => {
-  if(type == EngineType.SPOT){
+const fetchEngineResponseQueueType  = (type:MarketType) => {
+  if(type == MarketType.spot){
     return SPOT_ENGINE_RESPONSE_QUEUE
   }
-  else if(type == EngineType.PERP){
+  else if(type == MarketType.perp){
     return PERP_ENGINE_RESPONSE_QUEUE
   }
 }

@@ -10,7 +10,6 @@ import perpetualMarketRouter from "../src/router/perpetual.market.router.js"
 import marketRouter from "./router/market.router.js"
 import { connectRedis, pingRedis } from "./utils/engine-client.js";
 import { SERVER_INSTANCE_ID } from "./config.js";
-import { listenIndexPrices } from "./background-services/fetcher-index-price.js";
 import { listenPerpEngineResponses, listenSpotEngineResponses } from "./utils/enginer-responses-orchestrator.js";
 import { checkMinIOConnection } from "./utils/minio-client.js";
 import historyRouter from "./router/history.router.js"
@@ -61,7 +60,7 @@ app.listen(PORT, async () => {
   connectRedis();
   listenSpotEngineResponses();
   listenPerpEngineResponses();
-  listenIndexPrices();
+  //listenIndexPrices();
   checkMinIOConnection();
 
   pingRedis().then((data)=>{

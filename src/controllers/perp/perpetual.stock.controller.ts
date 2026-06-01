@@ -1,11 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { pushToQueue } from "../../utils/engine-client.js";
-import { EngineType } from "../../types/engine.js";
 import { prisma } from "../../db/prisma.client.js";
+import { MarketType } from "@cex/shared";
 
 /*
-  ------- ORDERS SECTION --------
+  ---------- ORDERS SECTION --------
   ----------------------------------
 */
 
@@ -20,7 +20,7 @@ export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 		if(!userId || !stockSymbol || !type || !side || !price || !quantity){
 			throw new HttpErrorResponse(400, false, "Invalid Inputs");
 		}
-    const queueResponse = await pushToQueue("create_order", {...req.body, userId}, EngineType.PERP);
+    const queueResponse = await pushToQueue("create_order", {...req.body, userId}, MarketType.perp);
 			
     if(queueResponse.ok == false){
       throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
@@ -40,7 +40,7 @@ export const deleteOrder = async (req:Request, res:Response, next:NextFunction) 
       throw new HttpErrorResponse(400, false, "Invalid Inputs");
     }
 
-    const queueResponse = await pushToQueue("cancel_order", req.body, EngineType.PERP);
+    const queueResponse = await pushToQueue("cancel_order", req.body, MarketType.perp);
       
     if(queueResponse.ok == false){
       throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
@@ -59,7 +59,7 @@ export const OpenOrders = async (req:Request, res:Response, next:NextFunction) =
     const id = req.id;
     const {symbol} = req.params
 
-    const queueResponse = await pushToQueue("get_open_order", {id, symbol}, EngineType.PERP);
+    const queueResponse = await pushToQueue("get_open_order", {id, symbol}, MarketType.perp);
       
     if(queueResponse.ok == false){
       throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
@@ -71,7 +71,6 @@ export const OpenOrders = async (req:Request, res:Response, next:NextFunction) =
     next(error)
   }
 }
-
 
 /*
   ------- CONTRACTS SECTION --------
@@ -85,9 +84,8 @@ export const openContracts = async (req:Request, res:Response, next:NextFunction
     if(!symbol || !userId){ 
       throw new HttpErrorResponse(400, false, "Empty Market Id");
     }
-
     const payload = { stockSymbol:symbol, userId }
-    const queueResponse = await pushToQueue("get_open_contract", payload, EngineType.PERP);
+    const queueResponse = await pushToQueue("get_open_contract", payload, MarketType.perp);
 
     if(queueResponse.ok == false){
       throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
@@ -145,7 +143,7 @@ export const depth = async (req:Request, res:Response, next:NextFunction) => {
       throw new HttpErrorResponse(400, false, "Invalid Params");
     }
 
-    const queueResponse = await pushToQueue("get_depth", {stockSymbol}, EngineType.PERP);
+    const queueResponse = await pushToQueue("get_depth", {stockSymbol}, MarketType.perp);
 
     if(queueResponse.ok == false){
       throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");

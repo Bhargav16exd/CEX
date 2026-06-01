@@ -4,13 +4,8 @@ import { createStockValidatorZod, depositBalanceValidatorZod } from "./zod-valid
 import { uploadFileToBucket } from "../../utils/upload-files.js";
 import { BUCKET_NAME } from "../../constants/contants.js";
 import { prisma } from "../../db/prisma.client.js";
-import { EngineType } from "../../types/engine.js";
+import { EngineType, MarketType } from "@cex/shared"; 
 import { pushToQueue } from "../../utils/engine-client.js";
-
-export enum MarketType {
-  SPOT = "spot",
-  PERPETUAL = "perp"
-}
 
 const createStock = async (req:Request, res:Response, next:any) => {
   try {
@@ -58,23 +53,25 @@ const createStock = async (req:Request, res:Response, next:any) => {
 
     let queueResponse;
 
-    if(market === MarketType.PERPETUAL){
+    if(market === MarketType.perp){
       queueResponse = await pushToQueue("create_stock_entity",{
         stockSymbol:parsedSymbol
-      }, EngineType.PERP);
+      }, MarketType.perp);
     }
 
-    if(market === MarketType.SPOT){
+    if(market === MarketType.spot){
       queueResponse = await pushToQueue("create_stock_entity",{
         stockSymbol:parsedSymbol
-      }, EngineType.SPOT);
+      }, MarketType.spot);
     }
 
     if(queueResponse!.ok == false){
       throw new HttpErrorResponse(400, false, queueResponse!.error || "Internal Server Error");
     }
     
-    return res.json(new HttpSuccessResponse(201, true, "Stock Created", stock));
+    return res
+    .status(201)
+    .json(new HttpSuccessResponse(201, true, "Stock Created", stock));
 
   } catch (error) {
     console.log(error)
@@ -90,7 +87,7 @@ const readStocks = async (req:Request, res:Response, next:any) => {
       throw new HttpErrorResponse(400, false, "Invalid Request Params");
     }
 
-    if( market != MarketType.SPOT && market != MarketType.PERPETUAL){
+    if( market != MarketType.spot && market != MarketType.perp){
       throw new HttpErrorResponse(400, false, "Invalid Market Type");
     }
 
@@ -208,12 +205,12 @@ const depositBalance = async(req:Request, res:Response, next:any) => {
 
     let queueRes = null
 
-    if(marketType == EngineType.SPOT){
-      queueRes = await pushToQueue("update_balance", req.body, EngineType.SPOT);
+    if(marketType == MarketType.perp){
+      queueRes = await pushToQueue("update_balance", req.body, MarketType.perp);
     }
 
-    if(marketType == EngineType.PERP){
-      queueRes = await pushToQueue("update_balance", req.body, EngineType.PERP);
+    if(marketType == EngineType.spot){
+      queueRes = await pushToQueue("update_balance", req.body, MarketType.spot);
     }
 
     return res.json(new HttpSuccessResponse(200, true, "Amount Deposited",queueRes?.data!));

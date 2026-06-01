@@ -25,7 +25,7 @@ export const authenticationMiddleware = async (req:any, _:any, next:NextFunction
     
     const user = await prisma.user.findFirst({
       where:{
-        id:Number(id)
+        id
       }
     })
 

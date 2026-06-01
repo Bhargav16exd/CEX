@@ -132,7 +132,7 @@ const depositBalance = async(req:Request, res:Response, next:any) => {
   try {
     //@ts-ignore
     const id = req.id
-    const {balance, marketType } = req.body
+    const { balance } = req.body
     const { market } = req.params
 
     if(!market){
@@ -150,7 +150,7 @@ const depositBalance = async(req:Request, res:Response, next:any) => {
     const isValidated = depositBalanceValidatorZod.safeParse({
       id,
       balance,
-      marketType
+      market
     })
 
     if(!isValidated){
@@ -159,15 +159,17 @@ const depositBalance = async(req:Request, res:Response, next:any) => {
 
     let queueRes = null
 
-    if(marketType == MarketType.perp){
-      queueRes = await pushToQueue("update_balance", req.body, MarketType.perp);
+    if(market == MarketType.perp){
+      queueRes = await pushToQueue("update_user_balance", {...req.body, id}, MarketType.perp);
     }
 
-    if(marketType == MarketType.spot){
-      queueRes = await pushToQueue("update_balance", req.body, MarketType.spot);
+    if(market == MarketType.spot){
+      queueRes = await pushToQueue("update_user_balance", {...req.body, id}, MarketType.spot);
     }
 
-    return res.json(new HttpSuccessResponse(200, true, "Amount Deposited",queueRes?.data!));
+    handleQueueError(queueRes)
+
+    return res.json(new HttpSuccessResponse(200, true, "Current Balance",queueRes?.data!));
     
   } catch (error) {
     next(error)

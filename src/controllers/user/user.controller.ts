@@ -5,7 +5,7 @@ import { prisma } from "../../db/prisma.client.js";
 import jwt from "jsonwebtoken"
 
 import { signupValidatorZod } from "../user/zod-validations.js"
-import { pushToQueue } from "../../utils/engine-client.js";
+import { handleQueueError, pushToQueue } from "../../utils/engine-client.js";
 import { MarketType } from "@cex/shared";
 import { depositBalanceValidatorZod } from "../markets/zod-validations.js";
 
@@ -28,7 +28,7 @@ const generateSignedToken = (id:string):string=> {
 const signup = async (req:Request, res:Response, next:any) => {
 	try {
 
-		const {username, password} = req.body;
+		const { username, password } = req.body;
 
     const isValidated = await signupValidatorZod.safeParseAsync({username, password});
 
@@ -40,7 +40,7 @@ const signup = async (req:Request, res:Response, next:any) => {
 			throw new HttpErrorResponse(400, false, "Incomplete Inputs");
 		}
 
-		const existingUser = await prisma.user.findUnique({
+		const existingUser = await prisma.user.findFirst({
 			where:{
 				username
 			}
@@ -61,14 +61,23 @@ const signup = async (req:Request, res:Response, next:any) => {
 		}
 	)
 
-	if(!user){
-		throw new HttpErrorResponse(500, false, "Internal Server Error");
-	}
+    if(!user){
+      throw new HttpErrorResponse(500, false, "Internal Server Error");
+    }
 
-	//send this to queue
-	//initUserInBalanceStore(user);
+    const queueResponseSpot = await pushToQueue("init_user_balance", {
+      id:user.id
+    }, MarketType.spot)
 
-	res.json(new HttpSuccessResponse(201, true, "User Onboarded"));
+    handleQueueError(queueResponseSpot);
+
+    const queueResponsePerp = await pushToQueue("init_user_balance", {
+      id:user.id
+    }, MarketType.perp)
+
+    handleQueueError(queueResponsePerp);
+
+    res.json(new HttpSuccessResponse(201, true, "User Onboarded"));
 
 	} catch (error) {
 		next(error);
@@ -192,9 +201,7 @@ const readBalance = async (req:any, res:Response, next:NextFunction) => {
       }, MarketType.spot);
     }
 
-    if(queueResponse!.ok == false){
-      throw new HttpErrorResponse(400, false, queueResponse!.error || "Internal Server Error");
-    }
+    handleQueueError(queueResponse);
 
     return res
     .status(200)

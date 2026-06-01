@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
+  id       String     @id @default(uuid())
   username String  @unique
   password String
   balance  Int     @default(0)
@@ -17,7 +17,7 @@ model User {
 }
 
 model Stock {
-  id      Int     @id @default(autoincrement())
+  id      String     @id @default(uuid())
   title   String
   symbol  String
   market  String
@@ -41,7 +41,7 @@ model Order {
 }
 
 model Fill {
-  id           Int      @id @default(autoincrement())
+  id           String      @id @default(uuid())
   makerSide    String
   takerSide    String
   makerID      String

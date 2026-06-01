@@ -4,6 +4,7 @@ import { EngineType, MarketType, type EngineCommandType, type EngineRequestType 
 import { randomUUID } from "crypto";
 import { registerResponseCallBack } from "./enginer-responses-orchestrator.js";
 import { SERVER_INSTANCE_ID } from "../config.js";
+import { HttpErrorResponse } from "./http.responses.js";
 
 const REDIS_URL = process.env.REDIS_URL || ""
 
@@ -82,3 +83,9 @@ const fetchEngineResponseQueueType  = (type:MarketType) => {
   }
 }
 
+export const handleQueueError = (queueResponse:any) => {
+  if(queueResponse!.ok == false){
+    throw new HttpErrorResponse(400, false, queueResponse!.error || "Internal Server Error");
+  }
+  return true
+}

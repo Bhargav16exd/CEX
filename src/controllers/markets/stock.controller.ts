@@ -185,45 +185,9 @@ const deleteStock = async (req:Request, res:Response, next:any) => {
   }
 }
 
-const depositBalance = async(req:Request, res:Response, next:any) => {
-  try {
-    const {id , balance, marketType } = req.body
-
-    if(!id || !balance || !marketType){
-      throw new HttpErrorResponse(400, false, "Invalid Inputs");
-    }
-
-    const isValidated = depositBalanceValidatorZod.safeParse({
-      id,
-      balance,
-      marketType
-    })
-
-    if(!isValidated){
-      throw new HttpErrorResponse(400, false, "Invalid Input Format");
-    }
-
-    let queueRes = null
-
-    if(marketType == MarketType.perp){
-      queueRes = await pushToQueue("update_balance", req.body, MarketType.perp);
-    }
-
-    if(marketType == EngineType.spot){
-      queueRes = await pushToQueue("update_balance", req.body, MarketType.spot);
-    }
-
-    return res.json(new HttpSuccessResponse(200, true, "Amount Deposited",queueRes?.data!));
-    
-  } catch (error) {
-    next(error)
-  }
-}
-
 export {
   createStock,
   readStocks,
   updateStock,
-  deleteStock,
-  depositBalance
+  deleteStock
 }

@@ -1,5 +1,3 @@
-import { WebSocket } from "node:http";
-
 import { PERP_ENGINE_RESPONSE_QUEUE, perpSubscriber, SPOT_ENGINE_RESPONSE_QUEUE, spotSubscriber } from "./engine-client.js";
 import type { EngineResponseType } from "@cex/shared";
 
@@ -70,15 +68,3 @@ const resolveEngineResponse = (response: EngineResponseType) => {
 	RESPONSE_CALLBACK_STORE.delete(response.transactionId);
 	unresolvedResponse.resolve(response);
 }
-
-export const listenIndexPrices = async () => {
-	const ws = new WebSocket(
-	"wss://dstream.binance.com/ws/solusd@indexPrice"
-	);
-
-	ws.onmessage = (event) => {
-	const data = JSON.parse(event.data);
-	console.log(data);
-	console.log("PRICE:", data.p)
-	};
-} 

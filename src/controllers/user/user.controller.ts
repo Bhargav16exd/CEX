@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken"
 import { signupValidatorZod } from "../user/zod-validations.js"
 import { pushToQueue } from "../../utils/engine-client.js";
 import { MarketType } from "@cex/shared";
+import { depositBalanceValidatorZod } from "../markets/zod-validations.js";
 
 const SALT_ROUNDS = 10 
 
@@ -118,31 +119,50 @@ const signin = async (req:Request, res:Response, next:any) => {
 	}
 }
 
-const addBalance = async (req: Request, res:Response) => {
-	try {
-		const {id , balance} = req.body
+const depositBalance = async(req:Request, res:Response, next:any) => {
+  try {
+    //@ts-ignore
+    const id = req.id
+    const {balance, marketType } = req.body
+    const { market } = req.params
 
-		if(!id || !balance){
-			throw new HttpErrorResponse(400, false, "Invalid Inputs");
-		}
+    if(!market){
+      throw new HttpErrorResponse(400, false, "Invalid Inputs");
+    }
 
-		const user = await prisma.user.update({
-			where:{
-				id: Number(id)
-			},
-			data:{
-				balance,
-			}
-		})
+    if(market != MarketType.spot && market != MarketType.perp){
+      throw new HttpErrorResponse(400, false, "Invalid Market Type");
+    }
 
-		if(!user){
-			throw new HttpErrorResponse(400, false, "Invalid User");
-		}
+    if(!id || !balance){
+      throw new HttpErrorResponse(400, false, "Invalid Inputs");
+    }
 
-		res.json(new HttpSuccessResponse(201, true, "Balance Credited"));
-	} catch (error) {
-		throw(error)
-	}
+    const isValidated = depositBalanceValidatorZod.safeParse({
+      id,
+      balance,
+      marketType
+    })
+
+    if(!isValidated){
+      throw new HttpErrorResponse(400, false, "Invalid Input Format");
+    }
+
+    let queueRes = null
+
+    if(marketType == MarketType.perp){
+      queueRes = await pushToQueue("update_balance", req.body, MarketType.perp);
+    }
+
+    if(marketType == MarketType.spot){
+      queueRes = await pushToQueue("update_balance", req.body, MarketType.spot);
+    }
+
+    return res.json(new HttpSuccessResponse(200, true, "Amount Deposited",queueRes?.data!));
+    
+  } catch (error) {
+    next(error)
+  }
 }
 
 const readBalance = async (req:any, res:Response, next:NextFunction) => {
@@ -188,6 +208,6 @@ const readBalance = async (req:any, res:Response, next:NextFunction) => {
 export {
 	signup,
   signin,
-	addBalance,
+  depositBalance,
   readBalance
 }

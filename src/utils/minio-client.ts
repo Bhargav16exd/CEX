@@ -11,7 +11,7 @@ const minIOClient = new Minio.Client({
   useSSL:false
 })
 
-async function checkMinIOConnection() {
+async function pingMinIO() {
   try {
     // Attempt to list buckets as a simple connectivity check
     await minIOClient.listBuckets();
@@ -23,5 +23,5 @@ async function checkMinIOConnection() {
 
 export default minIOClient
 export {
-  checkMinIOConnection
+  pingMinIO
 }

@@ -19,7 +19,7 @@ export const perpSubscriber = createClient({url:REDIS_URL}).on("error", (error)=
   console.log("ERORR WHILE CREATING REDIS SUBSCRIBER CLIENT");
 })
 
-export const connectRedis = async () => {
+export const initRedis = async () => {
   await Promise.all([publisher.connect(),spotSubscriber.connect(), perpSubscriber.connect()]);
 }
 
@@ -63,7 +63,6 @@ export const pushToQueue = async (
 
 	return recieveResponseFromEngine;
 };
-
 
 const fetchEngineRequestQueueType  = (type:MarketType) => {
   if(type == MarketType.spot){

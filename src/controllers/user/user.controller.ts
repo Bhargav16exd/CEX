@@ -193,13 +193,13 @@ const readBalance = async (req:any, res:Response, next:NextFunction) => {
 
     if(market === MarketType.perp){
       queueResponse = await pushToQueue("get_user_balance",{
-        userId:req?.id
+        id:req?.id
       }, MarketType.perp);
     }
 
     if(market === MarketType.spot){
       queueResponse = await pushToQueue("get_user_balance",{
-        userId:req?.id
+        id:req?.id
       }, MarketType.spot);
     }
 

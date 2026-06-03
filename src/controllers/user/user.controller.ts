@@ -207,7 +207,7 @@ const readBalance = async (req:any, res:Response, next:NextFunction) => {
 
     return res
     .status(200)
-    .json(new HttpSuccessResponse(200, true, "Balance", {balance:queueResponse!.data}))
+    .json(new HttpSuccessResponse(200, true, "Balance", queueResponse!.data!))
 
   } catch (error) {
     next(error)

@@ -12,10 +12,9 @@ import { MarketType } from "@cex/shared";
 export const Order = async (req:Request ,res:Response, next:NextFunction) => {
 	try {
     //@ts-ignore
-    // const userId = req?.id
-		// const {stockSymbol, type, side, price, quantity, collateral, reduceOnly} = req.body;
-
-    const {userId, stockSymbol, type, side, price, quantity, collateral, reduceOnly} = req.body;
+    const userId = req?.id
+		const {stockSymbol, type, side, price, quantity, collateral, reduceOnly} = req.body;
+    
 		
 		if(!userId || !stockSymbol || !type || !side || !price || !quantity){
 			throw new HttpErrorResponse(400, false, "Invalid Inputs");

@@ -229,11 +229,11 @@ const getUserSideAndRole = (fill:Fills, userId:string) =>{
   let role = "";
   let side = "";
   
-  if(Number(fill.makerID) === Number(userId)){
+  if(fill.makerID === userId){
     role = "Maker" 
     side = fill.makerSide 
   }
-  else if(Number(fill.takerID) === Number(userId)){
+  else if(fill.takerID === userId){
     role = "Taker"
     side = fill.takerSide
   }

@@ -78,12 +78,14 @@ export const OpenOrders = async (req:Request, res:Response, next:NextFunction) =
 
 export const openContracts = async (req:Request, res:Response, next:NextFunction) => {
   try {
-    const { symbol, userId } = req.params
+    //@ts-ignore
+    const id = req.id
+    const { symbol } = req.params
 
-    if(!symbol || !userId){ 
+    if(!symbol || !id){ 
       throw new HttpErrorResponse(400, false, "Empty Market Id");
     }
-    const payload = { stockSymbol:symbol, userId }
+    const payload = { symbol, id }
     const queueResponse = await pushToQueue("get_open_contract", payload, MarketType.perp);
 
     if(queueResponse.ok == false){
@@ -128,20 +130,7 @@ export const depth = async (req:Request, res:Response, next:NextFunction) => {
     if(!stockSymbol){
       throw new HttpErrorResponse(400, false, "Invalid Params");
     }
-
-    const symbol:any= stockSymbol
-
-    const isStockExist = await prisma.stock.findFirst({
-      where:{
-        market:"perp",
-        symbol
-      }
-    })
-
-    if(!isStockExist){
-      throw new HttpErrorResponse(400, false, "Invalid Params");
-    }
-
+    
     const queueResponse = await pushToQueue("get_depth", {stockSymbol}, MarketType.perp);
 
     if(queueResponse.ok == false){

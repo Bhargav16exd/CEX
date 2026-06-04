@@ -11,8 +11,8 @@ router.route("/order").delete(deleteOrder);
 
 router.route("/order/open/:symbol").get(authenticationMiddleware, OpenOrders);
 
-router.route("/contracts/open/:symbol/:userId").get(openContracts);
-router.route("/contracts/closed/:symbol/:userId").get(closedContracts);
+router.route("/contracts/open/:symbol").get(authenticationMiddleware, openContracts);
+router.route("/contracts/closed/:symbol").get(authenticationMiddleware, closedContracts);
 
 router.route("/depth/:stockSymbol").get(depth);
 

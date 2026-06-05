@@ -8,7 +8,7 @@ const router = Router();
 router.route('/stock').post(authenticationMiddleware, isAdminRoute, createStock);
 
 router.route('/stocks/:market').get(readStocks);
-router.route('/stock').patch(upload.single('file'), updateStock);
-router.route('/stock').delete(deleteStock);
+router.route('/stock').patch(authenticationMiddleware, isAdminRoute, upload.single('file'), updateStock);
+router.route('/stock').delete(authenticationMiddleware, isAdminRoute,deleteStock);
 
 export default router;

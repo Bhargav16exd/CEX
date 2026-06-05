@@ -57,8 +57,9 @@ export const OpenOrders = async (req:Request, res:Response, next:NextFunction) =
     //@ts-ignore
     const id = req.id;
     const {symbol} = req.params
+    const {count, offset} = req.query
 
-    const queueResponse = await pushToQueue("get_open_order", {id, symbol}, MarketType.perp);
+    const queueResponse = await pushToQueue("get_open_order", { id, symbol, count, offset }, MarketType.perp);
       
     if(queueResponse.ok == false){
       throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
@@ -141,6 +142,9 @@ export const depth = async (req:Request, res:Response, next:NextFunction) => {
     const orderbook = queueResponse.data.orderbook
     //@ts-ignore
     const orderbookIndex = queueResponse.data.orderbookIndex
+
+    console.log(orderbook)
+    console.log(queueResponse)
 
     const returnPayload = depthHelper(orderbook, orderbookIndex);
     

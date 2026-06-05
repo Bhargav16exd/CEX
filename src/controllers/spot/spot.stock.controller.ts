@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
-import { pushToQueue } from "../../utils/engine-client.js";
+import { handleQueueError, pushToQueue } from "../../utils/engine-client.js";
 import { MarketType } from "@cex/shared";
 import { prisma } from "../../db/prisma.client.js";
 
@@ -65,6 +65,68 @@ export const depth = async (req:Request, res:Response, next:NextFunction) => {
   }
 }
 
+export const OpenOrders = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+    //@ts-ignore
+    const id = req.id;
+    const {symbol} = req.params
+    const {count, offset} = req.query
+
+    const queueResponse = await pushToQueue("get_open_order", { id, symbol, count, offset }, MarketType.spot);
+      
+    if(queueResponse.ok == false){
+      throw new HttpErrorResponse(400, false, queueResponse.error || "Internal Server Error");
+    }
+    
+    return res.json(new HttpSuccessResponse(200, true, "Open Orders",queueResponse.data!));
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const Stocks = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+
+    //@ts-ignore
+    const {symbol, quantity, userId} = req.body
+
+    if(!symbol || !quantity || !userId){
+      throw new HttpErrorResponse(400, false, "Invalid Inputs");
+    }
+
+    const queueResponse = await pushToQueue("update_user_stock",{userId, symbol, quantity}, MarketType.spot);
+
+    handleQueueError(queueResponse);
+
+    return res.json(new HttpSuccessResponse(200, true, "Stocks Updated", queueResponse.data ?? {}))
+
+  } catch (error) {
+    next(error);
+  }
+}
+export const ReadStocks = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+
+    //@ts-ignore
+    const userId = req.id
+    const { symbol } = req.params
+    
+    if(!symbol || !userId){
+      throw new HttpErrorResponse(400, false, "Invalid Inputs");
+    }
+
+    const queueResponse = await pushToQueue("get_user_stock_quantity",{userId, symbol}, MarketType.spot);
+
+    handleQueueError(queueResponse);
+
+    return res.json(new HttpSuccessResponse(200, true, "Stocks", queueResponse.data ?? {}))
+
+  } catch (error) {
+    next(error);
+  }
+}
+
 interface StockSpecificOrderbookIndexStoreType {
   bid:number[],
   ask:number[]
@@ -114,6 +176,7 @@ const depthHelper = (orderbook:StockSpecificOrderbookStoreType, orderbookIndex:S
     asks
   }
 }
+
 
 // ------ Order Region End -----
 

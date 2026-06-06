@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { depth, OpenOrders, Order, ReadStocks, Stocks } from "../controllers/spot/spot.stock.controller.js";
+import { CancelOrder, depth, OpenOrders, Order, ReadStocks, Stocks } from "../controllers/spot/spot.stock.controller.js";
 import { authenticationMiddleware, isAdminRoute } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.route("/order").post(authenticationMiddleware, Order)
+router.route("/order").post(authenticationMiddleware, Order);
+router.route("/cancel-order").post(authenticationMiddleware, CancelOrder);
 
 router.route("/depth/:stockSymbol").get(depth)
 

@@ -2,7 +2,6 @@ import type { NextFunction, Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { handleQueueError, pushToQueue } from "../../utils/engine-client.js";
 import { MarketType } from "@cex/shared";
-import { prisma } from "../../db/prisma.client.js";
 
 // ------ Order Region Start -----
 /*
@@ -35,6 +34,26 @@ export const Order = async (req:Request, res:Response, next:any) => {
 	}
 }
 
+export const CancelOrder = async (req:Request, res:Response, next:NextFunction) => {
+  try {
+    //@ts-ignore
+    const userId = req.id
+    const { orderId, symbol } = req.body;
+
+    if(!orderId || !symbol){
+      throw new HttpErrorResponse(400, false, "Invalid User Input");
+    }
+    
+    const queueResponse = await pushToQueue("cancel_order", {userId, orderId, symbol}, MarketType.spot);
+
+    handleQueueError(queueResponse);
+
+    return res.json(new HttpSuccessResponse(204, true, "Canceled Order", queueResponse.data!));
+  } catch (error) {
+    next(error);
+  }
+}
+
 export const depth = async (req:Request, res:Response, next:NextFunction) => {
   try {
     const { stockSymbol } = req.params
@@ -53,6 +72,9 @@ export const depth = async (req:Request, res:Response, next:NextFunction) => {
     const orderbook = queueResponse.data.orderbook
     //@ts-ignore
     const orderbookIndex = queueResponse.data.orderbookIndex
+
+    console.log(orderbook)
+    console.log("index",orderbookIndex)
 
     const returnPayload = depthHelper(orderbook, orderbookIndex);
     

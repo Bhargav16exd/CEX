@@ -32,6 +32,9 @@ export const allFills = async (req:Request, res:Response, next:NextFunction) => 
           {takerID:id}
         ],
         market
+      },
+      orderBy:{
+        createdAt:"desc"
       }
     })
 
@@ -76,6 +79,9 @@ export const allOrders = async (req:Request, res:Response, next:NextFunction) =>
         quantity:true,
         status:true,
         createdAt:true
+      },
+      orderBy:{
+        createdAt:"desc"
       }
     }) || []
 
@@ -129,6 +135,9 @@ export const fills = async (req:Request, res:Response, next:NextFunction) => {
           {makerID:id},
           {takerID:id}
         ],
+      },
+      orderBy:{
+        createdAt:"desc"
       }
     })
 
@@ -184,6 +193,9 @@ export const orders = async (req:Request, res:Response, next:NextFunction) => {
         quantity:true,
         status:true,
         createdAt:true
+      },
+      orderBy:{
+        createdAt:"desc"
       }
     }) || []
 

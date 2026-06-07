@@ -1,5 +1,5 @@
 import { PERP_ENGINE_RESPONSE_QUEUE, perpSubscriber, SPOT_ENGINE_RESPONSE_QUEUE, spotSubscriber } from "./engine-client.js";
-import type { EngineResponseType } from "@cex/shared";
+import type { EngineResponseType } from "@bhargav16exdd/cex";
 
 interface PendingResponse {
   resolve: (response: EngineResponseType) => void;

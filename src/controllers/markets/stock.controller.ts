@@ -4,7 +4,7 @@ import { createStockValidatorZod, depositBalanceValidatorZod } from "./zod-valid
 import { uploadFileToBucket } from "../../utils/upload-files.js";
 import { BUCKET_NAME } from "../../constants/contants.js";
 import { prisma } from "../../db/prisma.client.js";
-import { EngineType, MarketType } from "@cex/shared"; 
+import { EngineType, MarketType } from "@bhargav16exdd/cex"; 
 import { pushToQueue } from "../../utils/engine-client.js";
 
 const createStock = async (req:Request, res:Response, next:any) => {

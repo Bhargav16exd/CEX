@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { pushToQueue } from "../../utils/engine-client.js";
 import { prisma } from "../../db/prisma.client.js";
-import { MarketType } from "@cex/shared";
+import { MarketType } from "@bhargav16exdd/cex";
 
 /*
   ---------- ORDERS SECTION --------

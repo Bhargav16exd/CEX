@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import { EngineType, MarketType, type EngineCommandType, type EngineRequestType } from "@cex/shared";
+import { EngineType, MarketType, type EngineCommandType, type EngineRequestType } from "@bhargav16exdd/cex";
 
 import { randomUUID } from "crypto";
 import { registerResponseCallBack } from "./enginer-responses-orchestrator.js";

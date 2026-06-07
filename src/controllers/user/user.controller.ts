@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken"
 
 import { signupValidatorZod } from "../user/zod-validations.js"
 import { handleQueueError, pushToQueue } from "../../utils/engine-client.js";
-import { MarketType } from "@cex/shared";
+import { MarketType } from "@bhargav16exdd/cex";
 import { depositBalanceValidatorZod } from "../markets/zod-validations.js";
 
 const SALT_ROUNDS = 10 

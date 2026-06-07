@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express"
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
 import { handleQueueError, pushToQueue } from "../../utils/engine-client.js";
-import { MarketType } from "@cex/shared";
+import { MarketType } from "@bhargav16exdd/cex";
 
 // ------ Order Region Start -----
 /*

@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { prisma } from "../../db/prisma.client.js";
 import { HttpErrorResponse, HttpSuccessResponse } from "../../utils/http.responses.js";
-import { MarketType } from "@cex/shared";
+import { MarketType } from "@bhargav16exdd/cex";
 
 /*
   FETCH ALL FILLS FOR ALL FILLS HISTORY

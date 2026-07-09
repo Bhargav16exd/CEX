@@ -9,7 +9,7 @@ import { handleQueueError, pushToQueue } from "../../utils/engine-client.js";
 import { MarketType } from "@bhargav16exdd/cex";
 import { depositBalanceValidatorZod } from "../markets/zod-validations.js";
 
-const SALT_ROUNDS = 10 
+export const SALT_ROUNDS = 10;
 
 const generateSignedToken = (id:string):string=> {
   const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || ""

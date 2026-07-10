@@ -2,6 +2,7 @@ import dotenv from "dotenv"
 import { prisma } from "../db/prisma.client.js";
 import bcrypt from "bcrypt"
 import { SALT_ROUNDS } from "../controllers/user/user.controller.js";
+import { execSync } from "child_process";
 
 dotenv.config();
 
@@ -35,6 +36,12 @@ async function initAdminUser(){
   console.log("ADMIN ACCOUNT CREATED");
 }
 
+function initMigrations(){
+  execSync("npx prisma migrate dev")
+  console.log("PRISMA MIGRATIONS APPLIED")
+}
+
 export {
-  initAdminUser
+  initAdminUser,
+  initMigrations
 }

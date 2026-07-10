@@ -8,6 +8,7 @@ import { signupValidatorZod } from "../user/zod-validations.js"
 import { handleQueueError, pushToQueue } from "../../utils/engine-client.js";
 import { MarketType } from "@bhargav16exdd/cex";
 import { depositBalanceValidatorZod } from "../markets/zod-validations.js";
+import { DEFAULT_USER_BALANCE, DEFAULT_USER_STOCKS } from "../../constants/contants.js";
 
 export const SALT_ROUNDS = 10;
 
@@ -63,16 +64,19 @@ const signup = async (req:Request, res:Response, next:any) => {
 
     if(!user){
       throw new HttpErrorResponse(500, false, "Internal Server Error");
-    }
+    }    
 
     const queueResponseSpot = await pushToQueue("init_user_balance", {
-      id:user.id
+      id:user.id,
+      balance:DEFAULT_USER_BALANCE,
+      stocks:DEFAULT_USER_STOCKS
     }, MarketType.spot)
 
     handleQueueError(queueResponseSpot);
 
     const queueResponsePerp = await pushToQueue("init_user_balance", {
-      id:user.id
+      id:user.id,
+      balance:DEFAULT_USER_BALANCE
     }, MarketType.perp)
 
     handleQueueError(queueResponsePerp);

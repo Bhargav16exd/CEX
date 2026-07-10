@@ -3,6 +3,9 @@ import { prisma } from "../db/prisma.client.js";
 import bcrypt from "bcrypt"
 import { SALT_ROUNDS } from "../controllers/user/user.controller.js";
 import { execSync } from "child_process";
+import { handleQueueError, pushToQueue } from "./engine-client.js";
+import { MarketType } from "@bhargav16exdd/cex";
+import { ADMIN_USER_BALANCE, ADMIN_USER_STOCKS } from "../constants/contants.js";
 
 dotenv.config();
 
@@ -24,7 +27,7 @@ async function initAdminUser(){
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data:{
       username,
       password:hashedPassword,
@@ -32,6 +35,21 @@ async function initAdminUser(){
       role:"admin"
     }
   })
+
+  const queueResponseSpot = await pushToQueue("init_user_balance", {
+    id:user.id,
+    balance:ADMIN_USER_BALANCE,
+    stocks:ADMIN_USER_STOCKS
+  }, MarketType.spot)
+
+  handleQueueError(queueResponseSpot);
+
+  const queueResponsePerp = await pushToQueue("init_user_balance", {
+    id:user.id,
+    balance:ADMIN_USER_BALANCE
+  }, MarketType.perp)
+
+  handleQueueError(queueResponsePerp);
 
   console.log("ADMIN ACCOUNT CREATED");
 }

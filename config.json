@@ -1,0 +1,13 @@
+{
+  "user_balances":{
+    "default_user":{
+      "balance":1000,
+      "stocks":10
+    },
+    "admin_user":{
+      "balance":10000,
+      "stocks":1000
+    }
+  },
+  "bucket_name":"centralized-exchange-bucket"
+}

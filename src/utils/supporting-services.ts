@@ -3,23 +3,30 @@ import { initRedis, pingRedis } from "./engine-client.js";
 import { listenPerpEngineResponses, listenSpotEngineResponses } from "./enginer-responses-orchestrator.js";
 import { initAdminUser, initMigrations } from "./init-services.js";
 import { pingMinIO } from "./minio-client.js";
+import runHealthChecks from "./health-check-services.js";
 
-export const initSupportingServices = () => {
+export const initSupportingServices = async () => {
 
-  //IF DEV ENV THEN RUN MIGRATIONS
-  if(process.env.DEV === EnvironmentType.DEV){
-    initMigrations();
-  }
+  //redis checks
+  await initRedis();
 
-  initRedis();
-  initAdminUser();
-  
   pingRedis().then(()=>{
     console.log("Redis Connected")
   });
 
   pingMinIO();
 
+  //listen engines
   listenSpotEngineResponses();
   listenPerpEngineResponses();
+
+  //perform health checks on supporting services 
+  await runHealthChecks();
+
+  //IF DEV ENV THEN RUN MIGRATIONS
+  if(process.env.DEV === EnvironmentType.DEV){
+    initMigrations();
+  }  
+
+  initAdminUser();
 }

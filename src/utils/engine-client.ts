@@ -50,7 +50,7 @@ export const pushToQueue = async (
   const ENGINE_RESPONSE_QUEUE = fetchEngineResponseQueueType(engineType)!;
 
 	//Register a callBack in the orchestrator to wait further
-	const recieveResponseFromEngine = registerResponseCallBack(transactionId, 1000000);
+	const recieveResponseFromEngine = registerResponseCallBack(transactionId, 1000 * 10);
 
 	const message : EngineRequestType = {
 		transactionId,

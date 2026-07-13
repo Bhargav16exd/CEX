@@ -5,14 +5,35 @@ import { SALT_ROUNDS } from "../controllers/user/user.controller.js";
 import { execSync } from "child_process";
 import { handleQueueError, pushToQueue } from "./engine-client.js";
 import { MarketType } from "@bhargav16exdd/cex";
-import { ADMIN_USER_BALANCE, ADMIN_USER_STOCKS } from "../constants/contants.js";
+import { ADMIN_USER_BALANCE, ADMIN_USER_STOCKS, PERP_MARKET_STOCKS, SPOT_MARKET_STOCKS } from "../constants/contants.js";
+import { createStock } from "../controllers/markets/stock-domain.js";
 
 dotenv.config();
 
+/*
+  --- SECTION : INIT ACCOUNTS ---- 
+*/
 async function initAdminUser(){
 
   const username = process.env.ADMIN_USERNAME!
   const password = process.env.ADMIN_PASSWORD!
+
+  userHelper(username, password, "ADMIN", ADMIN_USER_BALANCE, ADMIN_USER_STOCKS);
+
+  console.log("[INIT] ADMIN ACCOUNT CREATED");
+}
+
+async function initSeederUser(){
+
+  const username = process.env.SEEDER_USERNAME!
+  const password = process.env.SEEDER_PASSWORD!
+
+  userHelper(username, password, "SEEDER", ADMIN_USER_BALANCE, ADMIN_USER_STOCKS);
+
+  console.log("[INIT] SEEDER ACCOUNT CREATED");
+}
+
+const userHelper = async (username:string, password:string, userType:string, balance:number, stocks:number) => {
 
   const existingUser = await prisma.user.findFirst({
     where:{
@@ -21,7 +42,7 @@ async function initAdminUser(){
   })
 
   if(existingUser){
-    console.log("EXISTING ADMIN DATA DETECTED. SKIPPING ADMIN ACCOUNT CREATION")
+    console.log(`[INIT] EXISTING ${userType} DATA DETECTED. SKIPPING ${userType} ACCOUNT CREATION`)
     return
   }
 
@@ -32,28 +53,72 @@ async function initAdminUser(){
       username,
       password:hashedPassword,
       balance:0,
-      role:"admin"
+      role: userType == "ADMIN" ? "admin" : "client"
     }
   })
 
   const queueResponseSpot = await pushToQueue("init_user_balance", {
     id:user.id,
-    balance:ADMIN_USER_BALANCE,
-    stocks:ADMIN_USER_STOCKS
+    balance,
+    stocks
   }, MarketType.spot)
 
   handleQueueError(queueResponseSpot);
 
   const queueResponsePerp = await pushToQueue("init_user_balance", {
     id:user.id,
-    balance:ADMIN_USER_BALANCE
+    balance
   }, MarketType.perp)
 
   handleQueueError(queueResponsePerp);
-
-  console.log("ADMIN ACCOUNT CREATED");
 }
 
+/*
+  --- SECTION : INIT MARKETS ---- 
+*/
+async function initMarketListed(){
+
+  const spotStocks = SPOT_MARKET_STOCKS;
+  const perpStock = PERP_MARKET_STOCKS;
+
+  //init spot market
+  spotStocks.forEach(async({title, symbol})=>{
+    const isStockExist = await prisma.stock.findFirst({
+      where:{
+        symbol:symbol!.toLocaleLowerCase(),
+        market:MarketType.spot
+      }
+    })
+    if(isStockExist){
+      console.log(`[INIT] Stock ${symbol} already exist in market ${MarketType.spot}. Skipping...`);
+      return;
+    }
+    await createStock({title:title!, symbol:symbol!.toLocaleLowerCase(), market:MarketType.spot});
+
+    console.log(`[INIT] ${symbol} ${MarketType.spot}`);
+  })
+
+  //init spot market
+  perpStock.forEach(async({title, symbol})=>{
+    const isStockExist = await prisma.stock.findFirst({
+      where:{
+        symbol:symbol!.toLocaleLowerCase(),
+        market:MarketType.perp
+      }
+    })
+    if(isStockExist){
+      console.log(`[INIT] Stock ${symbol} already exist in market ${MarketType.perp}. Skipping...`);
+      return;
+    }
+    await createStock({title:title!, symbol:symbol!.toLocaleLowerCase(), market:MarketType.perp});
+    console.log(`[INIT] ${symbol} ${MarketType.perp}`);
+  })
+
+}
+
+/*
+  --- SECTION : INIT MIGRATIONS ---- 
+*/
 function initMigrations(){
   execSync("npx prisma migrate dev")
   console.log("PRISMA MIGRATIONS APPLIED")
@@ -61,5 +126,7 @@ function initMigrations(){
 
 export {
   initAdminUser,
-  initMigrations
+  initSeederUser,
+  initMigrations,
+  initMarketListed
 }

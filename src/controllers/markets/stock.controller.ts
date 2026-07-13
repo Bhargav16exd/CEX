@@ -4,8 +4,8 @@ import { createStockValidatorZod, depositBalanceValidatorZod } from "./zod-valid
 import { uploadFileToBucket } from "../../utils/upload-files.js";
 import { BUCKET_NAME } from "../../constants/contants.js";
 import { prisma } from "../../db/prisma.client.js";
-import { EngineType, MarketType } from "@bhargav16exdd/cex"; 
-import { pushToQueue } from "../../utils/engine-client.js";
+import { MarketType } from "@bhargav16exdd/cex"; 
+import { createStock as createStockEntity } from "./stock-domain.js";
 
 const createStock = async (req:Request, res:Response, next:any) => {
   try {
@@ -14,60 +14,31 @@ const createStock = async (req:Request, res:Response, next:any) => {
     if(!title || !symbol || !market){
       throw new HttpErrorResponse(400, false, "Invalid Inputs");
     }
-
+  
     const isValidated = createStockValidatorZod.safeParse({
       title,
       symbol,
       market
     })
-
-    const parsedSymbol = symbol.toLowerCase()
-
+  
+    const parsedSymbol = symbol.toLowerCase() as string;
+  
     if(!isValidated.success){
       throw new HttpErrorResponse(400, false, "Invalid Input Format");
     }
-
+  
     const isStockExist = await prisma.stock.findFirst({
       where:{
         symbol:parsedSymbol,
         market
       }
     })
-
+  
     if(isStockExist){
       throw new HttpErrorResponse(400, false, `Stock ${title} already exist in market ${market}`);
     }
 
-
-    const stock = await prisma.stock.create({
-      data:{
-        title,
-        market,
-        symbol:parsedSymbol
-      }
-    })
-
-    if(!stock){
-      throw new HttpErrorResponse(500, false, "Internal Server Error");
-    }
-
-    let queueResponse;
-
-    if(market === MarketType.perp){
-      queueResponse = await pushToQueue("create_stock_entity",{
-        stockSymbol:parsedSymbol
-      }, MarketType.perp);
-    }
-
-    if(market === MarketType.spot){
-      queueResponse = await pushToQueue("create_stock_entity",{
-        stockSymbol:parsedSymbol
-      }, MarketType.spot);
-    }
-
-    if(queueResponse!.ok == false){
-      throw new HttpErrorResponse(400, false, queueResponse!.error || "Internal Server Error");
-    }
+    const stock = await createStockEntity({title, symbol:parsedSymbol, market});
     
     return res
     .status(201)

@@ -1,7 +1,7 @@
 import { EnvironmentType } from "@bhargav16exdd/cex";
 import { initRedis, pingRedis } from "./engine-client.js";
 import { listenPerpEngineResponses, listenSpotEngineResponses } from "./enginer-responses-orchestrator.js";
-import { initAdminUser, initMigrations } from "./init-services.js";
+import { initAdminUser, initMarketListed, initMigrations, initSeederUser } from "./init-services.js";
 import { pingMinIO } from "./minio-client.js";
 import runHealthChecks from "./health-check-services.js";
 
@@ -28,5 +28,7 @@ export const initSupportingServices = async () => {
     initMigrations();
   }  
 
-  initAdminUser();
+  await initMarketListed();
+  await initAdminUser();
+  await initSeederUser();
 }

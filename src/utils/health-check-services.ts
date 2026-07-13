@@ -10,8 +10,8 @@ export default async function runHealthChecks(){
     const queueResponsePerp = await pushToQueue("heart_beat", {}, MarketType.perp) as any
     handleQueueError(queueResponsePerp)
 
-    console.log(`Spot Engine Health : ${queueResponseSpot.data.health}`)
-    console.log(`Perp Engine Health : ${queueResponsePerp.data.health}`)
+    console.log(`[INIT-HEALTH-CHECK] Spot Engine Health : ${queueResponseSpot.data.health}`)
+    console.log(`[INIT-HEALTH-CHECK] Perp Engine Health : ${queueResponsePerp.data.health}`)
   
   } catch (error: any) {
     if(error.message === "Engine response timed out"){

@@ -5,8 +5,8 @@
       "stocks":10
     },
     "admin_user":{
-      "balance":100000000,
-      "stocks":100000
+      "balance":110000000,
+      "stocks":300000
     }
   },
   "markets":{

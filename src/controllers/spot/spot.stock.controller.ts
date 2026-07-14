@@ -73,9 +73,6 @@ export const depth = async (req:Request, res:Response, next:NextFunction) => {
     //@ts-ignore
     const orderbookIndex = queueResponse.data.orderbookIndex
 
-    console.log(orderbook)
-    console.log("index",orderbookIndex)
-
     const returnPayload = depthHelper(orderbook, orderbookIndex);
     
     return res
@@ -176,8 +173,6 @@ const depthHelper = (orderbook:StockSpecificOrderbookStoreType, orderbookIndex:S
 
   const bids :any= []
   const asks :any= [];
-
-  console.log(orderbookIndex)
 
   orderbookIndex.bid.forEach((price)=>{
     const item = [] as any;

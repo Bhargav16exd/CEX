@@ -33,6 +33,24 @@ async function initSeederUser(){
   console.log("[INIT] SEEDER ACCOUNT CREATED");
 }
 
+async function initAskBotUser(){
+  const username = process.env.ASK_BOT_USERNAME!
+  const password = process.env.ASK_BOT_PASSWORD!
+
+  userHelper(username, password, "ASK_BOT", 0, ADMIN_USER_STOCKS);
+
+  console.log("[INIT] ASK BOT ACCOUNT CREATED");
+}
+
+async function initBidBotUser(){
+  const username = process.env.BID_BOT_USERNAME!
+  const password = process.env.BID_BOT_PASSWORD!
+
+  userHelper(username, password, "BID_BOT", ADMIN_USER_BALANCE, 0);
+
+  console.log("[INIT] BID BOT ACCOUNT CREATED");
+}
+
 const userHelper = async (username:string, password:string, userType:string, balance:number, stocks:number) => {
 
   const existingUser = await prisma.user.findFirst({
@@ -127,6 +145,8 @@ function initMigrations(){
 export {
   initAdminUser,
   initSeederUser,
+  initAskBotUser,
+  initBidBotUser,
   initMigrations,
   initMarketListed
 }

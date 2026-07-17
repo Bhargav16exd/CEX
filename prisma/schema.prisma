@@ -52,7 +52,7 @@ model Fill {
   symbol       String
   market       String
   price        Int
-  createdAt    DateTime @default(now())
+  createdAt    DateTime
 
   @@index([makerOrderID])
   @@index([takerOrderID])
@@ -69,4 +69,13 @@ model Contracts {
   realizedLoss      Int
   stockSymbol       String
   userId            String
+}
+
+model CandleStick {
+  id    String @id @default(uuid())
+  open  Int
+  close Int
+  high  Int
+  low   Int
+  time  DateTime
 }

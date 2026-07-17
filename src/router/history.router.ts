@@ -1,9 +1,11 @@
 import { Router } from "express";
 
 import { authenticationMiddleware } from "../middleware/auth.middleware.js";
-import { allFills, allOrders, fills, orders } from "../controllers/history/history.controller.js";
+import { allFills, allOrders, fills, globalFills, orders } from "../controllers/history/history.controller.js";
 
 const router = Router();
+
+router.route("/global-fills").get(globalFills);
 
 router.route("/fills/:market").get(authenticationMiddleware, allFills);
 router.route("/orders/:market").get(authenticationMiddleware, allOrders);

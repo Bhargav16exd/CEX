@@ -254,3 +254,17 @@ const getUserSideAndRole = (fill:Fills, userId:string) =>{
     role,side
   }
 }
+
+
+export const globalFills = async (req:Request , res:Response, next:NextFunction) => {
+  const fills = await prisma.fill.findMany({
+    select:{
+      createdAt:true,
+      price:true
+    },
+    orderBy:{
+      createdAt:"asc"
+    }
+  })
+  return res.json(new HttpSuccessResponse(200, true, "Global Fills", fills));
+}

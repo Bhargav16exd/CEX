@@ -103,7 +103,7 @@ async function initMarketListed(){
   spotStocks.forEach(async({title, symbol})=>{
     const isStockExist = await prisma.stock.findFirst({
       where:{
-        symbol:symbol!.toLocaleLowerCase(),
+        symbol:symbol!.toLowerCase(),
         market:MarketType.spot
       }
     })
@@ -134,19 +134,10 @@ async function initMarketListed(){
 
 }
 
-/*
-  --- SECTION : INIT MIGRATIONS ---- 
-*/
-function initMigrations(){
-  execSync("npx prisma migrate dev")
-  console.log("PRISMA MIGRATIONS APPLIED")
-}
-
 export {
   initAdminUser,
   initSeederUser,
   initAskBotUser,
   initBidBotUser,
-  initMigrations,
   initMarketListed
 }

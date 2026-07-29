@@ -5,7 +5,7 @@ import { SALT_ROUNDS } from "../controllers/user/user.controller.js";
 import { execSync } from "child_process";
 import { handleQueueError, pushToQueue } from "./engine-client.js";
 import { MarketType } from "@bhargav16exdd/cex";
-import { ADMIN_USER_BALANCE, ADMIN_USER_STOCKS, PERP_MARKET_STOCKS, SPOT_MARKET_STOCKS } from "../constants/contants.js";
+import { ADMIN_USER_BALANCE, ADMIN_USER_STOCKS, DEFAULT_USER_BALANCE, DEFAULT_USER_STOCKS, PERP_MARKET_STOCKS, SPOT_MARKET_STOCKS } from "../constants/contants.js";
 import { createStock } from "../controllers/markets/stock-domain.js";
 
 dotenv.config();
@@ -49,6 +49,15 @@ async function initBidBotUser(){
   userHelper(username, password, "BID_BOT", ADMIN_USER_BALANCE, 0);
 
   console.log("[INIT] BID BOT ACCOUNT CREATED");
+}
+
+async function initGuestUser(){
+  const username = process.env.GUEST_USERNAME!
+  const password = process.env.GUEST_PASSWORD!
+
+  userHelper(username, password, "GUEST_USER", DEFAULT_USER_BALANCE, DEFAULT_USER_STOCKS);
+
+  console.log("[INIT] GUEST ACCOUNT CREATED");
 }
 
 const userHelper = async (username:string, password:string, userType:string, balance:number, stocks:number) => {
@@ -139,5 +148,6 @@ export {
   initSeederUser,
   initAskBotUser,
   initBidBotUser,
+  initGuestUser,
   initMarketListed
 }
